@@ -9,9 +9,13 @@
 
 %%% Style chapters
 %% Define colors
-\definecolor{titlepagecolor}{cmyk}{1,.60,0,.40}
-\definecolor{colorchapternumber}{cmyk}{.0, .43, 1, .02}
-\definecolor{colorsectionnumber}{cmyk}{.0, .0, .0, .17}
+\definecolor{titlepagecolor}{cmyk}{{{ titlepagecolor }}}
+\definecolor{colorchapternumber}{cmyk}{{{ colorchapternumber }}}
+\definecolor{colorsectionnumber}{cmyk}{{{ colorsectionnumber }}}
+
+{% if colorchapterline %}
+\definecolor{colorchapterline}{cmyk}{{{ colorchapterline }}}
+{% else %}
 \colorlet{colorchapterline}{colorchapternumber!45}
 
 \renewcommand*{\chapterformat}{%

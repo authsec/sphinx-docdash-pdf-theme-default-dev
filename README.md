@@ -21,22 +21,57 @@ extensions = [
     'docdash_pdf_theme',
 ]
 
-# Required: The theme relies on LuaLaTeX and KOMA classes.
-latex_engine = 'lualatex'
+```
+
+**Note on LaTeX Engine:** This theme relies on `fontspec` and KOMA classes, which require LuaLaTeX. The extension will automatically set `latex_engine = 'lualatex'` if you haven't explicitly configured an engine. If you manually set it to something else (like `xelatex`), the build will proceed but generate a warning.
+
+---
+
+## Features & Customization
+
+The theme provides sensible defaults, but you can easily override them using specific variables in your `conf.py`.
+
+### 1. Dynamic File Generation
+
+You **do not** need to specify `latex_documents` or `.xmpdata` files manually. The theme automatically generates the `.tex` and `.xmpdata` output names based on your `project` and `author` variables.
+
+### 2. Custom Colors
+
+You can customize the accent colors of your PDF using standard Hex codes. The theme will automatically convert these to the CMYK values required by LaTeX.
+
+Add these variables to your `conf.py` to override the defaults:
+
+```python
+# --- Default Color Values ---
+docdash_titlepagecolor = '#FF9900'       # The main color used on the title page
+docdash_colorchapternumber = '#0092FA'   # The large chapter numbers
+docdash_colorsectionnumber = '#D4D4D4'   # Section numbering
+docdash_colorchapterline = None          # Optional. Defaults to a lighter shade of the chapter number color
 
 ```
 
-### Dynamic File Generation
+### 3. Custom Fonts
 
-You **do not** need to specify `latex_documents` or `.xmpdata` files manually. The theme automatically generates the `.tex` and `.xmpdata` output names based on your `project` and `author` variables in `conf.py`.
+The theme uses `fontspec` to define system fonts. You can easily swap these out in your `conf.py`.
 
-### Customization
+> **Important:** Because LuaLaTeX compiles using system fonts, any font you specify here **must be installed on the operating system** running the Sphinx build.
 
-The theme provides sensible defaults, but you can easily override them using standard Sphinx configuration options.
+```python
+# --- Default Font Settings ---
+docdash_main_font = 'Lato Light'
+docdash_main_font_options = 'BoldFont={Lato Regular}, ItalicFont={Lato Light Italic}, BoldItalicFont={Lato Italic}'
+docdash_sans_font = 'Exo 2'
+docdash_mono_font = 'IosevkaTerm NF'
 
-#### Changing Margins & Layout
+# Example override:
+# docdash_main_font = 'Ubuntu'
+# docdash_main_font_options = '' # Clear the Lato-specific overrides if your new font handles weights automatically
 
-Override the default layout by defining `latex_elements` in your `conf.py`. Only the keys you define will be overridden; the rest of the theme defaults (like fonts) will remain intact.
+```
+
+### 4. Margins & Layout
+
+Override the default layout by defining `latex_elements` in your `conf.py`. Only the keys you define will be overridden; the rest of the theme defaults (like your custom colors and fonts) will remain intact.
 
 ```python
 latex_elements = {
@@ -46,7 +81,7 @@ latex_elements = {
 
 ```
 
-#### Logos
+### 5. Logos & Standard Sphinx Options
 
 If you specify a logo, the theme will automatically handle adding it to the required LaTeX files:
 
@@ -55,16 +90,16 @@ latex_logo = '_static/my-custom-logo.png'
 
 ```
 
-#### Appendices & References
-
-Standard Sphinx LaTeX options remain fully configurable by the user:
+Standard Sphinx LaTeX options remain fully configurable by the user, for example:
 
 ```python
 latex_appendices = ['glossary', 'appendices', 'references']
 
 ```
 
+---
+
 ## Requirements
 
 * A full `texlive` installation is expected in the build environment.
-* `lualatex` must be the designated build engine. The extension will generate a warning during the build process if another engine is detected.
+* The system building the documentation must have the specified fonts installed natively.
