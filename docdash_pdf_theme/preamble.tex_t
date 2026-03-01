@@ -1,4 +1,3 @@
-% --- START PREAMBLE.TEX.INPUT  ---
 \usepackage{calc}
 \usepackage{pdflscape}
 \usepackage[automark]{scrlayer-scrpage}
@@ -9,14 +8,15 @@
 
 %%% Style chapters
 %% Define colors
-\definecolor{titlepagecolor}{cmyk}{{{ titlepagecolor }}}
-\definecolor{colorchapternumber}{cmyk}{{{ colorchapternumber }}}
-\definecolor{colorsectionnumber}{cmyk}{{{ colorsectionnumber }}}
+\definecolor{titlepagecolor}{cmyk}{ {{ titlepagecolor }} }
+\definecolor{colorchapternumber}{cmyk}{ {{ colorchapternumber }} }
+\definecolor{colorsectionnumber}{cmyk}{ {{ colorsectionnumber }} }
 
 {% if colorchapterline %}
-\definecolor{colorchapterline}{cmyk}{{{ colorchapterline }}}
+\definecolor{colorchapterline}{cmyk}{ {{ colorchapterline }} }
 {% else %}
 \colorlet{colorchapterline}{colorchapternumber!45}
+{% endif %}
 
 \renewcommand*{\chapterformat}{%
   \Ifthispageodd{%
@@ -58,7 +58,8 @@
 \makeatletter
 \KOMAoption{numbers}{noendperiod}
 \renewcommand\sectionlinesformat[4]{%
-% Ensure that there is at least x amount of the page available to print on before setting a section. If this is not the case, start a new page.
+% Ensure that there is at least x amount of the page available to print on before setting a section.
+% If this is not the case, start a new page.
 % This also helps in correctly choosing the even/odd page section layout in edge cases.
 \needspace{.05\textheight}
   \Ifthispageodd{%
@@ -126,4 +127,3 @@
 %%  \pagenumbering{arabic}%
 %%}
 %%\makeatother
-% --- END PREAMBLE.TEX.INPUT  ---

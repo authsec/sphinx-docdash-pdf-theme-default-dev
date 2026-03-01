@@ -6,7 +6,7 @@ from jinja2 import Template
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.2"
+__version__ = "0.1.1"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""

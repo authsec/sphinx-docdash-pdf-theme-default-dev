@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sphinx-docdash-pdf-theme-default"
-version = "0.1.2"
+version = "0.1.1"
 authors = [{ name="Jens Frey" }]
 description = "Default PDF theme for the DocDash document authoring system."
 readme = "README.md"
@@ -21,7 +21,7 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/authsec/sphinx-docdash-pdf-theme-default-dev"
+"Homepage" = "https://github.com/authsec/sphinx-docdash-pdf-theme-default"
 
 [tool.setuptools.packages.find]
 include = ["docdash_pdf_theme*"]
