@@ -1,0 +1,125 @@
+% --- START PREAMBLE.TEX.INPUT  ---
+\usepackage{calc}
+\usepackage{pdflscape}
+\usepackage[automark]{scrlayer-scrpage}
+\clearpairofpagestyles
+\ohead{\headmark}
+\ofoot{\pagemark}
+\pagestyle{scrheadings}
+
+%%% Style chapters
+%% Define colors
+\definecolor{titlepagecolor}{cmyk}{1,.60,0,.40}
+\definecolor{colorchapternumber}{cmyk}{.0, .43, 1, .02}
+\definecolor{colorsectionnumber}{cmyk}{.0, .0, .0, .17}
+\colorlet{colorchapterline}{colorchapternumber!45}
+
+\renewcommand*{\chapterformat}{%
+  \Ifthispageodd{%
+    % ODD: Line starts 1ex below baseline and goes 2cm above
+    \smash{\textcolor{colorchapterline}{\rule[-1ex]{2pt}{10cm}}}%
+    \makebox[0pt][l]{%
+      \hspace{\marginparsep}%
+      \textcolor{colorchapternumber}{\fontsize{30pt}{30pt}\selectfont\thechapter}%
+    }%
+  }{%
+    % EVEN: Symmetrical line and number for left margin
+    \makebox[0pt][r]{%
+      \textcolor{colorchapternumber}{\fontsize{30pt}{30pt}\selectfont\thechapter}%
+      \hspace{\marginparsep}%
+    }%
+    \smash{\textcolor{colorchapterline}{\rule[-1ex]{2pt}{10cm}}}%
+  }%
+}
+
+\renewcommand*\chapterlinesformat[3]{%
+  \Ifstr{#1}{chapter}{%
+    \Ifthispageodd{%
+      % ODD PAGE: [Title Block] [Gap] [Line | Number]
+      \hfill
+      \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedleft #3}% 
+      \hspace{1.5em}% This pushes the Title left, away from the margin edge
+      \makebox[0pt][l]{#2}% Anchor #2 at the 0-point of the margin
+    }{%
+      % EVEN PAGE: [Number | Line] [Gap] [Title Block]
+      \makebox[0pt][r]{#2}% Anchor #2 at the 0-point of the margin
+      \hspace{1.5em}% This pushes the Title right, away from the margin edge
+      \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedright #3}%
+      \hfill
+    }
+  }{%
+    \@hangfrom{#2}{#3}%
+  }
+}
+\makeatletter
+\KOMAoption{numbers}{noendperiod}
+\renewcommand\sectionlinesformat[4]{%
+% Ensure that there is at least x amount of the page available to print on before setting a section. If this is not the case, start a new page.
+% This also helps in correctly choosing the even/odd page section layout in edge cases.
+\needspace{.05\textheight}
+  \Ifthispageodd{%
+    \raggedleft#4\makebox[0pt][l]{\hspace*{\marginparsep}\relax\textcolor{colorsectionnumber}{#3}}%
+  }{%
+    %% \fontdimen2\font gives the width of the 'n' character in the current font, which is the same as \enskip
+    %% That value is removed, as this is auto inserted after the section command (as defined in the sectionformat)
+    %% e.g. \renewcommand\sectionformat{\thesection\autodot\enskip}
+    \raggedright\makebox[0pt][r]{\textcolor{colorsectionnumber}{#3}\hspace*{\dimexpr\marginparsep-\fontdimen2\font}\relax}#4%
+  }%
+}%
+\makeatother
+%%% Style chapters
+
+% Map Sphinx's "normal" style to "scrheadings" to prevent crashes
+\makeatletter
+\let\ps@normal\ps@scrheadings
+\makeatother
+
+% Fix Arrow in menuselection commands, as some fonts cannot handle that
+% 1. Define a helper to split the string at the '‣' character
+\makeatletter
+\def\my@menu@split#1‣#2\@nil{%
+  \if\relax\detokenize{#2}\relax
+    #1% No more arrows found
+  \else
+    #1 \ensuremath{\rightarrow} \my@menu@split#2\@nil
+  \fi
+}
+
+% 2. Redefine the Sphinx menu selection command
+\DeclareRobustCommand{\sphinxmenuselection}[1]{%
+  \textsf{\textit{\my@menu@split#1‣\@nil}}%
+}
+\makeatother
+
+%%%% --------------------------------------------------
+%%%% |:sec:| 'correctly' add list of figures, list of tables, list of code blocks to TOC
+%%%% --------------------------------------------------
+%%\makeatletter
+%%\renewcommand{\sphinxtableofcontents}{%
+%%  %
+%%  % before resetting page counter, let's do the right thing.
+%%  \if@openright\cleardoublepage\else\clearpage\fi
+%%  \pagenumbering{roman}%
+%%  \begingroup
+%%    \parskip \z@skip
+%%    \tableofcontents
+%%  \endgroup
+%%  %
+%%  %% addtional lists
+%%  \if@openright\cleardoublepage\else\clearpage\fi
+%%  \addcontentsline{toc}{chapter}{List of Figures}%
+%%  \listoffigures
+%%  %
+%%  \if@openright\cleardoublepage\else\clearpage\fi
+%%  \addcontentsline{toc}{chapter}{List of Tables}%
+%%  \listoftables
+%%  %
+%%  \if@openright\cleardoublepage\else\clearpage\fi
+%%  \addcontentsline{toc}{chapter}{List of Code Blocks}%
+%%  \listof{literalblock}{List of Code Blocks}%
+%%  %
+%%  \if@openright\cleardoublepage\else\clearpage\fi
+%%  \pagenumbering{arabic}%
+%%}
+%%\makeatother
+% --- END PREAMBLE.TEX.INPUT  ---

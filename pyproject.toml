@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sphinx-docdash-pdf-theme-default"
+version = "0.1.0"
+authors = [{ name="Jens Frey" }]
+description = "Default PDF theme for the DocDash document authoring system."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "sphinx>=5.0"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Framework :: Sphinx :: Extension",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/authsec/sphinx-docdash-pdf-theme-default"
+
+[tool.setuptools.packages.find]
+include = ["docdash_pdf_theme*"]

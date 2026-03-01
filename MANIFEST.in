@@ -1,0 +1,2 @@
+include docdash_pdf_theme/preamble.tex
+include docdash_pdf_theme/latex_styles/*.sty
