@@ -43,7 +43,7 @@ Add these variables to your `conf.py` to override the defaults:
 
 ```python
 # --- Default Color Values ---
-docdash_titlepagecolor = '#FF9900'       # The main color used on the title page
+docdash_titlepagecolor = '#FF9900'       # The main color used on the title page, more for the logo ...
 docdash_colorchapternumber = '#0092FA'   # The large chapter numbers
 docdash_colorsectionnumber = '#D4D4D4'   # Section numbering
 docdash_colorchapterline = None          # Optional. Defaults to a lighter shade of the chapter number color
