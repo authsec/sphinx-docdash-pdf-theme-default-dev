@@ -6,25 +6,32 @@ from jinja2 import Template
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 def get_safe_filename(name: str) -> str:
+    """Creates a filesystem-safe string from a project name."""
     safe = re.sub(r'[^A-Za-z0-9\s]+', '', name).strip().replace(' ', '_')
     return safe.lower() or "document"
 
 def hex_to_cmyk_string(hex_color: str) -> str:
-    # ... [Keep your existing hex_to_cmyk_string function exactly the same] ...
+    """Converts a hex color string (e.g., '#FF0000') to a LaTeX CMYK string."""
+    if not hex_color:
+        return "0, 0, 0, 1"
+        
     hex_color = hex_color.lstrip('#')
     if len(hex_color) != 6:
         logger.warning(f"[DocDash] Invalid hex color '{hex_color}'. Falling back to black.")
         return "0, 0, 0, 1"
 
+    # Convert Hex to RGB [0.0 - 1.0]
     r = int(hex_color[0:2], 16) / 255.0
     g = int(hex_color[2:4], 16) / 255.0
     b = int(hex_color[4:6], 16) / 255.0
 
+    # Calculate CMYK
     k = 1.0 - max(r, g, b)
-    if k == 1.0: return "0, 0, 0, 1"
+    if k == 1.0:
+        return "0, 0, 0, 1"
     
     c = (1.0 - r - k) / (1.0 - k)
     m = (1.0 - g - k) / (1.0 - k)
@@ -33,6 +40,8 @@ def hex_to_cmyk_string(hex_color: str) -> str:
     return f"{c:.3f}, {m:.3f}, {y:.3f}, {k:.3f}"
 
 def config_inited(app, config):
+    """Fired when Sphinx finishes reading conf.py."""
+    
     # 1. Smart default for latex_engine
     if config.latex_engine == 'pdflatex':
         config.latex_engine = 'lualatex'
@@ -76,10 +85,10 @@ def config_inited(app, config):
 
         my_preamble = template.render(**template_vars)
     else:
+        logger.warning("[DocDash PDF Theme] Could not find preamble.tex_t template.")
         my_preamble = ""
 
     # 5. Build the Dynamic Font Package String
-    # Format the options string to include brackets if provided, otherwise leave empty
     main_font_options = f"[{config.docdash_main_font_options}]" if config.docdash_main_font_options else ""
     
     dynamic_fontpkg = f"""
@@ -99,17 +108,22 @@ def config_inited(app, config):
         'fncychap': '',
         'tableofcontents': '\\tableofcontents',
         'sphinxsetup': 'hmargin={1.5cm,2.5cm}, vmargin={2cm,2cm}, marginpar=2.5cm',
-        'preamble': my_preamble,
         'papersize': 'a4paper',
         'pointsize': '11pt',
         'extraclassoptions': 'openright,twoside,parskip=half,numbers=noenddot',
-        'fontpkg': dynamic_fontpkg  # Inject our dynamically built string here
+        'fontpkg': dynamic_fontpkg
     }
 
     # Inject defaults without overwriting user configs
     for key, value in default_elements.items():
         if key not in config.latex_elements:
             config.latex_elements[key] = value
+
+    # ALWAYS append our preamble so the `normal` pagestyle fix isn't lost
+    if 'preamble' in config.latex_elements:
+        config.latex_elements['preamble'] += f"\n{my_preamble}"
+    else:
+        config.latex_elements['preamble'] = my_preamble
 
     # 7. Logo and Additional Files Handling
     if config.latex_logo and config.latex_logo not in config.latex_additional_files:
@@ -126,10 +140,8 @@ def build_finished(app, exception):
     if exception is not None or app.builder.name != 'latex':
         return
     
-    # Generate the XMP metadata file dynamically in the output directory
     safe_project = get_safe_filename(app.config.project)
     
-    # We populate tags dynamically using Sphinx's config context
     xmp_content = f"""\\Author{{{app.config.author}}}
 \\Title{{{app.config.project}}}
 \\Subject{{{app.config.project} Documentation}}
@@ -141,13 +153,13 @@ def build_finished(app, exception):
     xmp_path.write_text(xmp_content, encoding='utf-8')
 
 def setup(app):
-    # Color settings
+    # Colors
     app.add_config_value('docdash_titlepagecolor', '#FF9900', 'env') 
     app.add_config_value('docdash_colorchapternumber', '#0092FA', 'env') 
     app.add_config_value('docdash_colorsectionnumber', '#D4D4D4', 'env') 
     app.add_config_value('docdash_colorchapterline', None, 'env') 
 
-    # Font settings
+    # Fonts
     app.add_config_value('docdash_main_font', 'Lato Light', 'env')
     app.add_config_value('docdash_main_font_options', 'BoldFont={Lato Regular}, ItalicFont={Lato Light Italic}, BoldItalicFont={Lato Italic}', 'env')
     app.add_config_value('docdash_sans_font', 'Exo 2', 'env')
