@@ -8,15 +8,15 @@
 
 %%% Style chapters
 %% Define colors
-\definecolor{titlepagecolor}{cmyk}{ {{ titlepagecolor }} }
-\definecolor{colorchapternumber}{cmyk}{ {{ colorchapternumber }} }
-\definecolor{colorsectionnumber}{cmyk}{ {{ colorsectionnumber }} }
+\definecolor{titlepagecolor}{cmyk}{<< titlepagecolor >>}
+\definecolor{colorchapternumber}{cmyk}{<< colorchapternumber >>}
+\definecolor{colorsectionnumber}{cmyk}{<< colorsectionnumber >>}
 
-{% if colorchapterline %}
-\definecolor{colorchapterline}{cmyk}{ {{ colorchapterline }} }
-{% else %}
+<% if colorchapterline %>
+\definecolor{colorchapterline}{cmyk}{<< colorchapterline >>}
+<% else %>
 \colorlet{colorchapterline}{colorchapternumber!45}
-{% endif %}
+<% endif %>
 
 \renewcommand*{\chapterformat}{%
   \Ifthispageodd{%

@@ -2,11 +2,11 @@ import os
 import re
 from pathlib import Path
 from sphinx.util import logging
-from jinja2 import Template
+from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -70,7 +70,17 @@ def config_inited(app, config):
     
     if preamble_path.exists():
         template_content = preamble_path.read_text(encoding="utf-8")
-        template = Template(template_content)
+        
+        # Configure Jinja with LaTeX-safe delimiters to prevent '{%' clashes
+        env = Environment(
+            block_start_string='<%',
+            block_end_string='%>',
+            variable_start_string='<<',
+            variable_end_string='>>',
+            comment_start_string='<#',
+            comment_end_string='#>'
+        )
+        template = env.from_string(template_content)
         
         template_vars = {
             'titlepagecolor': hex_to_cmyk_string(config.docdash_titlepagecolor),
