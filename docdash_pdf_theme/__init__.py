@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -82,37 +82,23 @@ def config_inited(app, config):
         )
         template = env.from_string(template_content)
         
+        # Legacy/Specific Theme Colors
         template_vars = {
-            # Legacy/Specific Theme Colors
             'titlepagecolor': hex_to_cmyk_string(config.docdash_titlepagecolor) or "0, 0, 0, 1",
             'colorchapternumber': hex_to_cmyk_string(config.docdash_colorchapternumber) or "0, 0, 0, 1",
             'colorsectionnumber': hex_to_cmyk_string(config.docdash_colorsectionnumber) or "0, 0, 0, 1",
             'colorchapterline': hex_to_cmyk_string(config.docdash_colorchapterline),
-            
-            # Universal DocDash Namespace Elements (Fonts & Colors)
-            'docdash_title_font': config.docdash_title_font,
-            'docdash_title_color': hex_to_cmyk_string(config.docdash_title_color),
-            'docdash_subtitle_font': config.docdash_subtitle_font,
-            'docdash_subtitle_color': hex_to_cmyk_string(config.docdash_subtitle_color),
-            'docdash_author_font': config.docdash_author_font,
-            'docdash_author_color': hex_to_cmyk_string(config.docdash_author_color),
-            'docdash_date_font': config.docdash_date_font,
-            'docdash_date_color': hex_to_cmyk_string(config.docdash_date_color),
-            'docdash_release_version_font': config.docdash_release_version_font,
-            'docdash_release_version_color': hex_to_cmyk_string(config.docdash_release_version_color),
-            'docdash_part_font': config.docdash_part_font,
-            'docdash_part_color': hex_to_cmyk_string(config.docdash_part_color),
-            'docdash_chapter_font': config.docdash_chapter_font,
-            'docdash_chapter_color': hex_to_cmyk_string(config.docdash_chapter_color),
-            'docdash_section_font': config.docdash_section_font,
-            'docdash_section_color': hex_to_cmyk_string(config.docdash_section_color),
-            'docdash_subsection_font': config.docdash_subsection_font,
-            'docdash_subsection_color': hex_to_cmyk_string(config.docdash_subsection_color),
-            'docdash_subsubsection_font': config.docdash_subsubsection_font,
-            'docdash_subsubsection_color': hex_to_cmyk_string(config.docdash_subsubsection_color),
-            'docdash_rubric_font': config.docdash_rubric_font,
-            'docdash_rubric_color': hex_to_cmyk_string(config.docdash_rubric_color),
         }
+        
+        # Dynamically load Universal DocDash Namespace Elements (Fonts, Colors, Sizes)
+        elements = [
+            'title', 'subtitle', 'author', 'date', 'release_version', 
+            'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric'
+        ]
+        for el in elements:
+            template_vars[f'docdash_{el}_font'] = getattr(config, f'docdash_{el}_font', None)
+            template_vars[f'docdash_{el}_size'] = getattr(config, f'docdash_{el}_size', None)
+            template_vars[f'docdash_{el}_color'] = hex_to_cmyk_string(getattr(config, f'docdash_{el}_color', None))
 
         my_preamble = template.render(**template_vars)
     else:
@@ -204,6 +190,7 @@ def setup(app):
     for el in elements:
         app.add_config_value(f'docdash_{el}_font', None, 'env')
         app.add_config_value(f'docdash_{el}_color', None, 'env')
+        app.add_config_value(f'docdash_{el}_size', None, 'env')
 
     app.connect('config-inited', config_inited, priority=900)
     app.connect('build-finished', build_finished)
