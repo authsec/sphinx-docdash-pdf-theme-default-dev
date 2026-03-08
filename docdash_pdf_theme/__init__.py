@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.10"
+__version__ = "0.1.11"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -85,18 +85,52 @@ def config_inited(app, config):
         template_vars = {
             'docdash_subtitle': getattr(config, 'docdash_subtitle', None),
             'docdash_show_release': getattr(config, 'docdash_show_release', True),
+            'docdash_title_page_color': hex_to_cmyk_string(getattr(config, 'docdash_title_page_color', None)),
         }
         
-        # Dynamically load Universal DocDash Namespace Elements (Fonts, Colors, Sizes)
+        # Dynamically load Universal DocDash Namespace Elements
         elements = [
             'title', 'subtitle', 'author', 'date', 'release_version', 
             'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
             'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
         ]
+        
         for el in elements:
             template_vars[f'docdash_{el}_font'] = getattr(config, f'docdash_{el}_font', None)
             template_vars[f'docdash_{el}_size'] = getattr(config, f'docdash_{el}_size', None)
             template_vars[f'docdash_{el}_color'] = hex_to_cmyk_string(getattr(config, f'docdash_{el}_color', None))
+
+        # --- INHERITANCE LOGIC ---
+        # Resolve inheritance cascading top-down before passing to Jinja template
+        if getattr(config, 'docdash_inherit_all', True):
+            hierarchies = [
+                ['chapter', 'section', 'subsection', 'subsubsection'],
+                ['chapter_number', 'section_number', 'subsection_number', 'subsubsection_number']
+            ]
+            properties = [
+                ('font', getattr(config, 'docdash_inherit_font', True)),
+                ('color', getattr(config, 'docdash_inherit_color', True)),
+                ('size', getattr(config, 'docdash_inherit_size', False))
+            ]
+            
+            for hierarchy in hierarchies:
+                for prop, is_enabled in properties:
+                    if is_enabled:
+                        # Grab the highest level value (e.g., chapter_font)
+                        current_val = template_vars[f'docdash_{hierarchy[0]}_{prop}']
+                        
+                        # Loop down the hierarchy
+                        for i in range(1, len(hierarchy)):
+                            level = hierarchy[i]
+                            key = f'docdash_{level}_{prop}'
+                            
+                            # If the current level isn't explicitly defined, inherit from above
+                            if template_vars[key] is None:
+                                template_vars[key] = current_val
+                            # If it IS defined, it becomes the new value to cascade downward
+                            else:
+                                current_val = template_vars[key]
+        # --- END INHERITANCE LOGIC ---
 
         my_preamble = template.render(**template_vars)
     else:
@@ -168,9 +202,15 @@ def build_finished(app, exception):
     xmp_path.write_text(xmp_content, encoding='utf-8')
 
 def setup(app):
-    # Core Text Elements & Toggles
+    # Toggles & Text
     app.add_config_value('docdash_subtitle', None, 'env')
     app.add_config_value('docdash_show_release', True, 'env')
+    
+    # Inheritance Toggles
+    app.add_config_value('docdash_inherit_all', True, 'env')
+    app.add_config_value('docdash_inherit_font', True, 'env')
+    app.add_config_value('docdash_inherit_color', True, 'env')
+    app.add_config_value('docdash_inherit_size', False, 'env')
 
     # Core Base Fonts
     app.add_config_value('docdash_main_font', 'Lato Light', 'env')
@@ -180,15 +220,13 @@ def setup(app):
 
     # Universal Element Customization Namespace & Sensible Initial Defaults
     defaults = {
+        'title_page_color': '#FF9900',
         'chapter_number_color': '#0092FA',
         'chapter_number_size': r'\fontsize{30pt}{30pt}\selectfont',
-        'section_number_color': '#D4D4D4',
-        'subsection_number_color': '#D4D4D4',
-        'subsubsection_number_color': '#D4D4D4',
     }
 
     elements = [
-        'title', 'subtitle', 'author', 'date', 'release_version', 
+        'title_page', 'title', 'subtitle', 'author', 'date', 'release_version', 
         'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
         'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
     ]

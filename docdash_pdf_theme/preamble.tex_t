@@ -7,6 +7,13 @@
 \pagestyle{scrheadings}
 
 %%% Style chapters
+%% Define core colors
+<% if docdash_title_page_color %>
+\definecolor{titlepagecolor}{cmyk}{<< docdash_title_page_color >>}
+<% else %>
+\definecolor{titlepagecolor}{cmyk}{0, 0, 0, 1}
+<% endif %>
+
 %% Define Universal Element Colors
 <% if docdash_title_color %>\definecolor{ddtitlecolor}{cmyk}{<< docdash_title_color >>}<% endif %>
 <% if docdash_subtitle_color %>\definecolor{ddsubtitlecolor}{cmyk}{<< docdash_subtitle_color >>}<% endif %>
@@ -21,12 +28,18 @@
 <% if docdash_rubric_color %>\definecolor{ddrubriccolor}{cmyk}{<< docdash_rubric_color >>}<% endif %>
 
 %% Define the Number Line / Structure Colors
-<% if docdash_chapter_number_color %>\definecolor{ddchapternumbercolor}{cmyk}{<< docdash_chapter_number_color >>}<% endif %>
+<% if docdash_chapter_number_color %>
+\definecolor{ddchapternumbercolor}{cmyk}{<< docdash_chapter_number_color >>}
+<% else %>
+\definecolor{ddchapternumbercolor}{cmyk}{0, 0, 0, 1}
+<% endif %>
+
 <% if docdash_chapter_line_color %>
 \definecolor{ddchapterlinecolor}{cmyk}{<< docdash_chapter_line_color >>}
 <% else %>
 \colorlet{ddchapterlinecolor}{ddchapternumbercolor!45}
 <% endif %>
+
 <% if docdash_section_number_color %>\definecolor{ddsectionnumbercolor}{cmyk}{<< docdash_section_number_color >>}<% endif %>
 <% if docdash_subsection_number_color %>\definecolor{ddsubsectionnumbercolor}{cmyk}{<< docdash_subsection_number_color >>}<% endif %>
 <% if docdash_subsubsection_number_color %>\definecolor{ddsubsubsectionnumbercolor}{cmyk}{<< docdash_subsubsection_number_color >>}<% endif %>
