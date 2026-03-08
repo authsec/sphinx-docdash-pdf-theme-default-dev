@@ -29,21 +29,44 @@ extensions = [
 
 ## Features & Customization
 
-The theme acts as a clean, minimalist canvas out of the box. **It applies zero colors or custom sizes unless you explicitly define them.** If an option is omitted from your configuration, the logic is seamlessly disabled, leaving you with standard KOMA-Script defaults.
+### 1. Structural Layout Settings
 
-All options are properly namespaced under `docdash_`.
+By default, the theme pushes chapter and section numbers into the page margins and *alternates* their placement based on the page number (right margin on right pages, left margin on left pages).
 
-### 1. The Classic "DocDash Look"
-
-If you want to instantly replicate the iconic orange and blue DocDash styling, simply copy and paste these defaults into your `conf.py`:
+You can strictly configure this alignment, margin placement, the spacing gap, and even toggle a decorative colored structural line, **on a per-element basis!**
 
 ```python
-docdash_title_page_color = '#FF9900'
-docdash_chapter_number_color = '#0092FA'
-docdash_chapter_number_size = r'\fontsize{30pt}{30pt}\selectfont'
-docdash_section_number_color = '#D4D4D4'
-docdash_subsection_number_color = '#D4D4D4'
-docdash_subsubsection_number_color = '#D4D4D4'
+# --- Alignment ---
+
+docdash_heading_align = 'alternate'  # 'alternate', 'left', 'right'
+
+# docdash_chapter_align = 'right'    # Override lock just for Chapters
+
+# --- Margin Logic ---
+
+docdash_numbers_in_margin = True     # Global toggle
+
+# docdash_section_number_margin = False # Specific override: pushes Section numbers inline
+
+# --- Margin Spacing ---
+
+# Controls the physical empty space between the edge of the margin number and the start of the title block.
+
+docdash_heading_margin_space = '1.5em' # Global default applied to ALL headings
+
+# docdash_section_margin_space = '0.5em' # Specific override applied ONLY to sections!
+
+# --- Decorative Lines ---
+
+# Automatically draws a colored bar next to the number if placed in the margin.
+
+# docdash_chapter_number_line = True   # Chapters have it on by default
+
+# docdash_section_number_line = True   # Sections have it off by default
+
+# docdash_section_line_height = '2cm'  # Defaults to '10cm'
+
+# docdash_section_line_color = '#FF0000' # Defaults to inheriting the number's color
 
 ```
 
@@ -70,10 +93,11 @@ You can precisely control the **color** (via Hex codes), **font** (via system fo
 > 2. **Line Spacing / Baselineskip (e.g., `36pt`):** The vertical distance from the bottom of this line to the bottom of the next line below it.
 > 
 > 
-> *Design Hack:* If your subtitle feels too far away from your main title, you can artificially shrink the line spacing parameter on your main title to pull the subtitle upward! (e.g., `docdash_title_size = r'\fontsize{32pt}{14pt}\selectfont'`).
 
 ```python
 # --- Universal DocDash Theme Overrides ---
+
+docdash_title_page_color = '#FF9900' # Paints the cover page background
 
 # Titles & Metadata
 docdash_title_font = 'Ubuntu'
@@ -82,53 +106,24 @@ docdash_title_size = r'\fontsize{32pt}{36pt}\selectfont'
 
 docdash_subtitle = "My Document Subtitle"
 # docdash_subtitle_font = ...
-# docdash_subtitle_color = ...
-# docdash_subtitle_size = ...
-
-# docdash_author_font = ...
-# docdash_author_color = ...
-# docdash_author_size = ...
 
 docdash_show_release = False # Swallows the Release/Version string strictly for PDF Output
-# docdash_release_version_font = ...
-# docdash_release_version_color = ...
-# docdash_release_version_size = ...
-
-# docdash_date_font = ...
-# docdash_date_color = ...
-# docdash_date_size = ...
 
 # Document Structure Text
 docdash_part_font = 'Ewert'
 docdash_part_color = '#008734'
-# docdash_part_size = ...
-
 # docdash_chapter_font = ... (Inherits 'Ewert')
-# docdash_chapter_color = ... (Inherits '#008734')
-# docdash_chapter_size = ...
-
-# docdash_section_font = ... (Inherits 'Ewert')
-# docdash_section_color = ... (Inherits '#008734')
-# docdash_section_size = ...
 
 # Document Structure Numbers
 # The Part number layout ("Part I") can optionally be split into two pieces for complex font combinations:
 docdash_part_number_part_font = 'Kaushan Script'
 docdash_part_number_part_color = '#00FF11'
-docdash_part_number_part_size = r'\fontsize{32pt}{36pt}\selectfont'
 
 docdash_part_number_number_font = 'Oi'
 docdash_part_number_number_color = '#FFBB00'
-docdash_part_number_number_size = r'\fontsize{32pt}{36pt}\selectfont'
 
-# If left blank, they automatically fallback to these singular part_number values:
-# docdash_part_number_font = 'Kapakana'
-# docdash_part_number_color = '#00FF11'
-
-# Sphinx Specifics
-# docdash_rubric_font = ...
-docdash_rubric_color = '#A8DADC'
-# docdash_rubric_size = ...
+docdash_chapter_number_color = ""  # Clears the built-in blue default to inherit #00FF11 from part!
+docdash_section_number_color = ""  # Clears the built-in gray default
 
 ```
 
@@ -144,6 +139,3 @@ docdash_sans_font = 'Exo 2'
 docdash_mono_font = 'IosevkaTerm NF'
 
 ```
-
-> **Important:** Because LuaLaTeX compiles using system fonts, any font you specify here **must be installed on the operating system** running the Sphinx build.
-
