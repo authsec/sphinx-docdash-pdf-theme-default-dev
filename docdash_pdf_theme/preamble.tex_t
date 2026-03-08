@@ -184,17 +184,15 @@
   \@ifundefined{releasename}{}{\renewcommand{\releasename}{}}
 }
 <% endif %>
-\makeatother
 
 %% Force KOMA-Script to actively use the split partnumber elements for the "Part X" string.
 %% This MUST happen \AtBeginDocument so that Babel/Polyglossia language localizations don't overwrite it!
 \AtBeginDocument{
-  \makeatletter
   \@ifundefined{partformat}{}{%
     \renewcommand*{\partformat}{{\usekomafont{partnumberpart}\partname\nobreakspace}{\usekomafont{partnumbernumber}\thepart\autodot}}
   }
-  \makeatother
 }
+\makeatother
 
 \renewcommand*{\chapterformat}{%
   \Ifthispageodd{%
