@@ -379,38 +379,38 @@
             % Define the coordinate that splits the bar
             \coordinate (text_box_end) at ([xshift=1ex]title.east); % Edge of text area padding
 
-            % Resolve Icon Box Dimensions (Padding) - We use padding to define the centered space
+            % Resolve Icon Box Dimensions (Padding)
             \coordinate (icon_box_start) at (text_box_end);
             \coordinate (icon_box_end) at ([xshift=\csname ddadmon@#1@iconpad\endcsname]icon_box_start);
-            \coordinate (dddeco_center) at ($ (icon_box_start)!.5!(icon_box_end) $); % Center for icon placement
+            \coordinate (dddeco_center) at ($ (icon_box_start)!.5!(icon_box_end) $); 
 
             % DRAWING ORDER MATTERS
 
-            % 1. DRAW Main Title Text Background (title.south west to text_box_end)
+            % 1. DRAW Main Title Text Background 
             \fill[fill=ddadmon@#1@titlebg](title.south west)--(title.north west)--(text_box_end |- title.north)--(text_box_end |- title.south)--cycle;
-            \draw[ddadmon@#1@titlebg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]title.north west) -| (text_box_end) [sharp corners]|- (title.south west); % Draw frame around text box area
+            \draw[ddadmon@#1@titlebg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]title.north west) -| (text_box_end) [sharp corners]|- (title.south west); 
 
-            % 2. DRAW NEW separate Icon Box Background (icon_box_start to icon_box_end)
+            % 2. DRAW NEW separate Icon Box Background 
             \fill[fill=ddadmon@#1@iconboxbg](icon_box_start |- title.south)--(icon_box_start |- title.north)--(icon_box_end |- title.north)--(icon_box_end |- title.south)--cycle;
-            \draw[ddadmon@#1@iconboxbg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]icon_box_start |- title.north) -| (icon_box_end) [sharp corners]|- (icon_box_start |- title.south); % Frame around icon box
+            \draw[ddadmon@#1@iconboxbg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]icon_box_start |- title.north) -| (icon_box_end) [sharp corners]|- (icon_box_start |- title.south); 
 
             % 3. CENTER the icon explicitly within the new iconbox
             \path(dddeco_center) node[inner sep=0pt] (ddicon) {{\csname ddadmon@#1@iconsize\endcsname\color{ddadmon@#1@iconfg}\csname ddadmon@#1@icon\endcsname}};
 
-            % 4. Draw the cascading chevron decorationpast the centered icon (relative to the user's spacer variable)
+            % 4. Draw the cascading chevron decoration past the centered icon (relative to the user's spacer variable)
             \coordinate (dddeco) at ([xshift=\csname ddadmon@#1@decospace\endcsname]icon_box_end); % Anchored end point
 
             \foreach \i [evaluate=\i as \ni using \i+2, count=\xi from 0, evaluate=\xi as \op using 1-2*\xi/10] in {0,1,2,3}{
-                \draw[line width=.5mm, ddadmon@#1@iconboxbg, opacity=\op]
-                ([xshift=\i mm]icon_box_end |- title.north) --
-                ([xshift=\ni mm]icon_box_end |- title.east) --
-                ([xshift=\i mm]icon_box_end |- title.south);
+                \draw[line width=.5mm, ddadmon@#1@titlebg, opacity=\op]
+                ([xshift=\i mm]dddeco |- title.north) --
+                ([xshift=\ni mm]dddeco |- title.east) --
+                ([xshift=\i mm]dddeco |- title.south);
             }
         },
         frame hidden,
-        borderline west={1.5pt}{0pt}{ddadmon@#1@iconboxbg}, % Use iconbox color for accents
-        borderline south={1.5pt}{0pt}{ddadmon@#1@iconboxbg},
-        overlay={\draw[line width=1.5pt, ddadmon@#1@iconboxbg] (frame.south east)--++(90:5mm);}
+        borderline west={1.5pt}{0pt}{ddadmon@#1@titlebg}, 
+        borderline south={1.5pt}{0pt}{ddadmon@#1@titlebg},
+        overlay={\draw[line width=1.5pt, ddadmon@#1@titlebg] (frame.south east)--++(90:5mm);}
     }
 }
 
