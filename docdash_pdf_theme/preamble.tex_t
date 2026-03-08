@@ -1,6 +1,10 @@
 \usepackage{calc}
 \usepackage{pdflscape}
 \usepackage[automark]{scrlayer-scrpage}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, hooks, breakable}
 \clearpairofpagestyles
 \ohead{\headmark}
 \ofoot{\pagemark}
@@ -18,7 +22,6 @@
   \def\titlepage{%
     \orig@titlepage
     \pagecolor{titlepagecolor}%
-    %% Using modern LaTeX shipout hook to cleanly disable the color the exact moment Page 1 finishes!
     \AddToHookNext{shipout/after}{\nopagecolor}%
   }%
   \orig@sphinxmaketitle
@@ -332,5 +335,76 @@
 % 2. Redefine the Sphinx menu selection command
 \DeclareRobustCommand{\sphinxmenuselection}[1]{%
   \textsf{\textit{\my@menu@split#1‣\@nil}}%
+}
+\makeatother
+
+%% ----------------------------------------------------
+%% DYNAMIC TCOLORBOX SPHINX ADMONITIONS
+%% ----------------------------------------------------
+
+%% 1. Register generated colors and fonts
+<% for t in ['generic', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention'] %>
+  \definecolor{ddadmon@<< t >>@titlebg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_title_background_color_cmyk'] >>}
+  \definecolor{ddadmon@<< t >>@contentbg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_content_background_color_cmyk'] >>}
+  \definecolor{ddadmon@<< t >>@titlefg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_title_font_color_cmyk'] >>}
+  \definecolor{ddadmon@<< t >>@contentfg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_content_font_color_cmyk'] >>}
+  \definecolor{ddadmon@<< t >>@iconfg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_title_icon_color_cmyk'] >>}
+
+  \expandafter\def\csname ddadmon@<< t >>@titlefont\endcsname{<% if v['docdash_admonition_' ~ t ~ '_title_font'] %>\fontspec{<< v['docdash_admonition_' ~ t ~ '_title_font'] >>}<% endif %><< v['docdash_admonition_' ~ t ~ '_title_font_size'] >>}
+  \expandafter\def\csname ddadmon@<< t >>@contentfont\endcsname{<% if v['docdash_admonition_' ~ t ~ '_content_font'] %>\fontspec{<< v['docdash_admonition_' ~ t ~ '_content_font'] >>}<% endif %><< v['docdash_admonition_' ~ t ~ '_content_font_size'] >>}
+  \expandafter\def\csname ddadmon@<< t >>@iconsize\endcsname{<< v['docdash_admonition_' ~ t ~ '_title_icon_size'] >>}
+  \expandafter\def\csname ddadmon@<< t >>@icon\endcsname{<< v['docdash_admonition_' ~ t ~ '_title_icon'] >>}
+<% endfor %>
+
+\makeatletter
+%% 2. Define the reusable tcolorbox style using dynamic lookups
+\tcbset{
+    docdashadmonitionstyle/.style={
+        enhanced, breakable,
+        sharp corners,
+        attach boxed title to top left,
+        fonttitle=\csname ddadmon@#1@titlefont\endcsname,
+        coltitle=ddadmon@#1@titlefg,
+        colback=ddadmon@#1@contentbg,
+        coltext=ddadmon@#1@contentfg,
+        fontupper=\csname ddadmon@#1@contentfont\endcsname,
+        boxed title style={
+            empty, left=1ex, right=0pt,
+            frame code ={
+                \foreach \i [evaluate=\i as \ni using \i+2, count=\xi from 0, evaluate=\xi as \op using 1-2*\xi/10] in {10,11,12,13}{
+                    \draw[line width=.5mm, ddadmon@#1@titlebg, opacity=\op]([xshift=\i mm]frame.north east)--([xshift=\ni mm]frame.east)--([xshift=\i mm]frame.south east);
+                }
+            }
+        },
+        underlay boxed title={
+            \path([xshift=3ex]title.east) node[inner sep=0pt] (ddicon) {{\csname ddadmon@#1@iconsize\endcsname\color{ddadmon@#1@iconfg}\csname ddadmon@#1@icon\endcsname}};
+            \fill[fill=ddadmon@#1@titlebg](title.south west)--(title.north west)--(title.north east)--(title.south east);
+            \draw[ddadmon@#1@titlebg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]title.north east) -| ([xshift=2mm]ddicon.east) [sharp corners]|- (title.south west);
+        },
+        frame hidden,
+        borderline west={1.5pt}{0pt}{ddadmon@#1@titlebg},
+        borderline south={1.5pt}{0pt}{ddadmon@#1@titlebg},
+        overlay={\draw[line width=1.5pt, ddadmon@#1@titlebg] (frame.south east)--++(90:5mm);}
+    }
+}
+
+%% 3. Wrapper environment
+\newtcolorbox{docdashadmonbox}[2]{
+    docdashadmonitionstyle=#1,
+    title={#2}
+}
+
+%% 4. Hook into Sphinx's master admonition macro
+\renewenvironment{sphinxadmonition}[2]{%
+    % #1 is the admonition type (e.g. "note"), #2 is the rendered title
+    % We use \@ifundefined on the generated icon macro to check if this type was generated.
+    % If a random sphinx extension sends an unknown type, it safely falls back to 'generic'.
+    \@ifundefined{ddadmon@#1@icon}{%
+        \begin{docdashadmonbox}{generic}{#2}%
+    }{%
+        \begin{docdashadmonbox}{#1}{#2}%
+    }%
+}{%
+    \end{docdashadmonbox}%
 }
 \makeatother

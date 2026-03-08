@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.27"
+__version__ = "0.1.28"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -88,7 +88,7 @@ def config_inited(app, config):
             'docdash_title_page_color': hex_to_cmyk_string(getattr(config, 'docdash_title_page_color', None)),
         }
         
-        # Heading Alignment Resolution
+        # --- HEADING ALIGNMENT & MARGIN RESOLUTION ---
         global_align = getattr(config, 'docdash_heading_align', 'alternate')
         if global_align not in ['left', 'right', 'alternate']:
             global_align = 'alternate'
@@ -99,29 +99,24 @@ def config_inited(app, config):
                 val = global_align
             template_vars[f'docdash_{el}_align'] = val
 
-        # Margin & Line Formatting Resolution
         global_margin = getattr(config, 'docdash_numbers_in_margin', True)
         global_margin_space = getattr(config, 'docdash_heading_margin_space', None) or '1.5em'
         
         for el in ['chapter', 'section', 'subsection', 'subsubsection']:
-            # Margin toggle
             margin_val = getattr(config, f'docdash_{el}_number_margin', None)
             template_vars[f'docdash_{el}_number_margin'] = margin_val if margin_val is not None else global_margin
             
-            # Line toggle
             line_val = getattr(config, f'docdash_{el}_number_line', None)
             default_line = True if el == 'chapter' else False
             template_vars[f'docdash_{el}_number_line'] = line_val if line_val is not None else default_line
             
-            # Dimensions
             height_val = getattr(config, f'docdash_{el}_line_height', None)
             template_vars[f'docdash_{el}_line_height'] = height_val if height_val else '10cm'
             
-            # Space Resolution: Specific -> Global -> Default
             space_val = getattr(config, f'docdash_{el}_margin_space', None)
             template_vars[f'docdash_{el}_margin_space'] = space_val if space_val else global_margin_space
 
-        # Dynamically load Universal DocDash Namespace Elements
+        # --- TEXT INHERITANCE LOGIC ---
         elements = [
             'title', 'subtitle', 'author', 'date', 'release_version', 
             'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
@@ -129,14 +124,11 @@ def config_inited(app, config):
             'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number',
             'chapter_line', 'section_line', 'subsection_line', 'subsubsection_line'
         ]
-        
         for el in elements:
             template_vars[f'docdash_{el}_font'] = getattr(config, f'docdash_{el}_font', None)
             template_vars[f'docdash_{el}_size'] = getattr(config, f'docdash_{el}_size', None)
             template_vars[f'docdash_{el}_color'] = hex_to_cmyk_string(getattr(config, f'docdash_{el}_color', None))
 
-        # --- INHERITANCE LOGIC ---
-        # Resolve inheritance cascading top-down before passing to Jinja template
         if getattr(config, 'docdash_inherit_all', True):
             hierarchies = [
                 ['part', 'chapter', 'section', 'subsection', 'subsubsection'],
@@ -148,34 +140,64 @@ def config_inited(app, config):
                 ('color', getattr(config, 'docdash_inherit_color', True)),
                 ('size', getattr(config, 'docdash_inherit_size', False))
             ]
-            
             for hierarchy in hierarchies:
                 for prop, is_enabled in properties:
                     if is_enabled:
-                        # Grab the highest level value (e.g., part_font)
                         current_val = template_vars[f'docdash_{hierarchy[0]}_{prop}']
-                        
-                        # Loop down the hierarchy
                         for i in range(1, len(hierarchy)):
                             level = hierarchy[i]
                             key = f'docdash_{level}_{prop}'
-                            
-                            # If the current level isn't explicitly defined (None or empty string), inherit from above
                             if not template_vars[key]:
                                 template_vars[key] = current_val
-                            # If it IS defined, it becomes the new value to cascade downward
                             else:
                                 current_val = template_vars[key]
-        # --- END INHERITANCE LOGIC ---
 
-        # Apply specific fallback logic for part_number split components
         for prop in ['font', 'color', 'size']:
             if not template_vars[f'docdash_part_number_part_{prop}']:
                 template_vars[f'docdash_part_number_part_{prop}'] = template_vars[f'docdash_part_number_{prop}']
             if not template_vars[f'docdash_part_number_number_{prop}']:
                 template_vars[f'docdash_part_number_number_{prop}'] = template_vars[f'docdash_part_number_{prop}']
 
-        # Self-reference for dynamic Jinja lookups
+        # --- ADMONITION LOGIC ---
+        generic_defaults = {
+            'title_icon': r'\textbf{i}',
+            'title_icon_color': '#FFFFFF',
+            'title_icon_size': '',
+            'title_font': '',
+            'title_font_color': '#FFFFFF',
+            'title_font_size': r'\large\bfseries',
+            'title_background_color': '#0092FA',
+            'content_background_color': '#F8F9FA',
+            'content_font': '',
+            'content_font_color': '#000000',
+            'content_font_size': r'\normalsize'
+        }
+
+        admon_types = ['generic', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention']
+        admon_props = ['title_icon', 'title_icon_color', 'title_icon_size', 'title_font', 'title_font_color', 'title_font_size', 'title_background_color', 'content_background_color', 'content_font', 'content_font_color', 'content_font_size']
+
+        for t in admon_types:
+            for p in admon_props:
+                val = getattr(config, f'docdash_admonition_{t}_{p}', None)
+                
+                # Resolve Fallbacks
+                if val is None:
+                    if t == 'generic':
+                        val = generic_defaults[p]
+                    else:
+                        val = template_vars[f'docdash_admonition_generic_{p}'] # Generic is processed first, so this is safe
+                
+                # Image Path Icon Detection
+                if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
+                    val = f"\\vcenter{{\\hbox{{\\includegraphics[height=1em, keepaspectratio]{{{val}}}}}}}"
+
+                template_vars[f'docdash_admonition_{t}_{p}'] = val
+                
+                # Pre-calculate CMYK for colors
+                if p.endswith('_color'):
+                    template_vars[f'docdash_admonition_{t}_{p}_cmyk'] = hex_to_cmyk_string(val)
+
+
         template_vars['v'] = template_vars
         my_preamble = template.render(**template_vars)
     else:
@@ -287,6 +309,14 @@ def setup(app):
         for attr in ['font', 'color', 'size']:
             key = f'{el}_{attr}'
             app.add_config_value(f'docdash_{key}', None, 'env')
+
+    # Admonition Customization Namespace
+    admon_types = ['generic', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention']
+    admon_props = ['title_icon', 'title_icon_color', 'title_icon_size', 'title_font', 'title_font_color', 'title_font_size', 'title_background_color', 'content_background_color', 'content_font', 'content_font_color', 'content_font_size']
+
+    for t in admon_types:
+        for p in admon_props:
+            app.add_config_value(f'docdash_admonition_{t}_{p}', None, 'env')
 
     app.connect('config-inited', config_inited, priority=900)
     app.connect('build-finished', build_finished)
