@@ -7,17 +7,6 @@
 \pagestyle{scrheadings}
 
 %%% Style chapters
-%% Define core colors
-\definecolor{titlepagecolor}{cmyk}{<< titlepagecolor >>}
-\definecolor{colorchapternumber}{cmyk}{<< colorchapternumber >>}
-\definecolor{colorsectionnumber}{cmyk}{<< colorsectionnumber >>}
-
-<% if colorchapterline %>
-\definecolor{colorchapterline}{cmyk}{<< colorchapterline >>}
-<% else %>
-\colorlet{colorchapterline}{colorchapternumber!45}
-<% endif %>
-
 %% Define Universal Element Colors
 <% if docdash_title_color %>\definecolor{ddtitlecolor}{cmyk}{<< docdash_title_color >>}<% endif %>
 <% if docdash_subtitle_color %>\definecolor{ddsubtitlecolor}{cmyk}{<< docdash_subtitle_color >>}<% endif %>
@@ -30,6 +19,17 @@
 <% if docdash_subsection_color %>\definecolor{ddsubsectioncolor}{cmyk}{<< docdash_subsection_color >>}<% endif %>
 <% if docdash_subsubsection_color %>\definecolor{ddsubsubsectioncolor}{cmyk}{<< docdash_subsubsection_color >>}<% endif %>
 <% if docdash_rubric_color %>\definecolor{ddrubriccolor}{cmyk}{<< docdash_rubric_color >>}<% endif %>
+
+%% Define the Number Line / Structure Colors
+<% if docdash_chapter_number_color %>\definecolor{ddchapternumbercolor}{cmyk}{<< docdash_chapter_number_color >>}<% endif %>
+<% if docdash_chapter_line_color %>
+\definecolor{ddchapterlinecolor}{cmyk}{<< docdash_chapter_line_color >>}
+<% else %>
+\colorlet{ddchapterlinecolor}{ddchapternumbercolor!45}
+<% endif %>
+<% if docdash_section_number_color %>\definecolor{ddsectionnumbercolor}{cmyk}{<< docdash_section_number_color >>}<% endif %>
+<% if docdash_subsection_number_color %>\definecolor{ddsubsectionnumbercolor}{cmyk}{<< docdash_subsection_number_color >>}<% endif %>
+<% if docdash_subsubsection_number_color %>\definecolor{ddsubsubsectionnumbercolor}{cmyk}{<< docdash_subsubsection_number_color >>}<% endif %>
 
 %% Apply Universal Fonts, Sizes, and Colors to KOMA-Script Elements
 <% if docdash_title_font or docdash_title_color or docdash_title_size %>
@@ -73,6 +73,32 @@
 <% if docdash_subsubsection_font or docdash_subsubsection_color or docdash_subsubsection_size %>
 \addtokomafont{subsubsection}{<% if docdash_subsubsection_color %>\color{ddsubsubsectioncolor}<% endif %><% if docdash_subsubsection_size %><< docdash_subsubsection_size >><% endif %><% if docdash_subsubsection_font %>\fontspec{<< docdash_subsubsection_font >>}<% endif %>}
 <% endif %>
+
+%% Custom Elements for Structural Numbers
+\newkomafont{chapternumber}{}
+<% if docdash_chapter_number_font or docdash_chapter_number_color or docdash_chapter_number_size %>
+\addtokomafont{chapternumber}{<% if docdash_chapter_number_color %>\color{ddchapternumbercolor}<% endif %><% if docdash_chapter_number_size %><< docdash_chapter_number_size >><% endif %><% if docdash_chapter_number_font %>\fontspec{<< docdash_chapter_number_font >>}<% endif %>}
+<% endif %>
+
+\newkomafont{sectionnumber}{}
+<% if docdash_section_number_font or docdash_section_number_color or docdash_section_number_size %>
+\addtokomafont{sectionnumber}{<% if docdash_section_number_color %>\color{ddsectionnumbercolor}<% endif %><% if docdash_section_number_size %><< docdash_section_number_size >><% endif %><% if docdash_section_number_font %>\fontspec{<< docdash_section_number_font >>}<% endif %>}
+<% endif %>
+
+\newkomafont{subsectionnumber}{}
+<% if docdash_subsection_number_font or docdash_subsection_number_color or docdash_subsection_number_size %>
+\addtokomafont{subsectionnumber}{<% if docdash_subsection_number_color %>\color{ddsubsectionnumbercolor}<% endif %><% if docdash_subsection_number_size %><< docdash_subsection_number_size >><% endif %><% if docdash_subsection_number_font %>\fontspec{<< docdash_subsection_number_font >>}<% endif %>}
+<% endif %>
+
+\newkomafont{subsubsectionnumber}{}
+<% if docdash_subsubsection_number_font or docdash_subsubsection_number_color or docdash_subsubsection_number_size %>
+\addtokomafont{subsubsectionnumber}{<% if docdash_subsubsection_number_color %>\color{ddsubsubsectionnumbercolor}<% endif %><% if docdash_subsubsection_number_size %><< docdash_subsubsection_number_size >><% endif %><% if docdash_subsubsection_number_font %>\fontspec{<< docdash_subsubsection_number_font >>}<% endif %>}
+<% endif %>
+
+%% Failsafe for lower KOMA hooks to prevent crash if undefined
+\newkomafont{paragraphnumber}{}
+\newkomafont{subparagraphnumber}{}
+
 
 %% Redefine Sphinx Rubric mapping to inject custom styling
 <% if docdash_rubric_font or docdash_rubric_color or docdash_rubric_size %>
@@ -131,18 +157,18 @@
 \renewcommand*{\chapterformat}{%
   \Ifthispageodd{%
     % ODD: Line starts 1ex below baseline and goes 2cm above
-    \smash{\textcolor{colorchapterline}{\rule[-1ex]{2pt}{10cm}}}%
+    \smash{\textcolor{ddchapterlinecolor}{\rule[-1ex]{2pt}{10cm}}}%
     \makebox[0pt][l]{%
       \hspace{\marginparsep}%
-      \textcolor{colorchapternumber}{\fontsize{30pt}{30pt}\selectfont\thechapter}%
+      \usekomafont{chapternumber}\thechapter%
     }%
   }{%
     % EVEN: Symmetrical line and number for left margin
     \makebox[0pt][r]{%
-      \textcolor{colorchapternumber}{\fontsize{30pt}{30pt}\selectfont\thechapter}%
+      \usekomafont{chapternumber}\thechapter%
       \hspace{\marginparsep}%
     }%
-    \smash{\textcolor{colorchapterline}{\rule[-1ex]{2pt}{10cm}}}%
+    \smash{\textcolor{ddchapterlinecolor}{\rule[-1ex]{2pt}{10cm}}}%
   }%
 }
 
@@ -174,13 +200,14 @@
 % If this is not the case, start a new page.
 % This also helps in correctly choosing the even/odd page section layout in edge cases.
 \needspace{.05\textheight}
+  \def\mycurrentnumberfont{\usekomafont{#1number}}%
   \Ifthispageodd{%
-    \raggedleft#4\makebox[0pt][l]{\hspace*{\marginparsep}\relax\textcolor{colorsectionnumber}{#3}}%
+    \raggedleft#4\makebox[0pt][l]{\hspace*{\marginparsep}\relax\mycurrentnumberfont #3}%
   }{%
     %% \fontdimen2\font gives the width of the 'n' character in the current font, which is the same as \enskip
     %% That value is removed, as this is auto inserted after the section command (as defined in the sectionformat)
     %% e.g. \renewcommand\sectionformat{\thesection\autodot\enskip}
-    \raggedright\makebox[0pt][r]{\textcolor{colorsectionnumber}{#3}\hspace*{\dimexpr\marginparsep-\fontdimen2\font}\relax}#4%
+    \raggedright\makebox[0pt][r]{\mycurrentnumberfont #3\hspace*{\dimexpr\marginparsep-\fontdimen2\font}\relax}#4%
   }%
 }%
 \makeatother

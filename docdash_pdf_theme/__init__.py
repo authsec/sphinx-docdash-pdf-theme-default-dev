@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.9"
+__version__ = "0.1.10"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -82,20 +82,16 @@ def config_inited(app, config):
         )
         template = env.from_string(template_content)
         
-        # Legacy/Specific Theme Colors & Toggles
         template_vars = {
             'docdash_subtitle': getattr(config, 'docdash_subtitle', None),
             'docdash_show_release': getattr(config, 'docdash_show_release', True),
-            'titlepagecolor': hex_to_cmyk_string(config.docdash_titlepagecolor) or "0, 0, 0, 1",
-            'colorchapternumber': hex_to_cmyk_string(config.docdash_colorchapternumber) or "0, 0, 0, 1",
-            'colorsectionnumber': hex_to_cmyk_string(config.docdash_colorsectionnumber) or "0, 0, 0, 1",
-            'colorchapterline': hex_to_cmyk_string(config.docdash_colorchapterline),
         }
         
         # Dynamically load Universal DocDash Namespace Elements (Fonts, Colors, Sizes)
         elements = [
             'title', 'subtitle', 'author', 'date', 'release_version', 
-            'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric'
+            'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
+            'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
         ]
         for el in elements:
             template_vars[f'docdash_{el}_font'] = getattr(config, f'docdash_{el}_font', None)
@@ -176,27 +172,32 @@ def setup(app):
     app.add_config_value('docdash_subtitle', None, 'env')
     app.add_config_value('docdash_show_release', True, 'env')
 
-    # Core Base Colors
-    app.add_config_value('docdash_titlepagecolor', '#FF9900', 'env') 
-    app.add_config_value('docdash_colorchapternumber', '#0092FA', 'env') 
-    app.add_config_value('docdash_colorsectionnumber', '#D4D4D4', 'env') 
-    app.add_config_value('docdash_colorchapterline', None, 'env') 
-
     # Core Base Fonts
     app.add_config_value('docdash_main_font', 'Lato Light', 'env')
     app.add_config_value('docdash_main_font_options', 'BoldFont={Lato Regular}, ItalicFont={Lato Light Italic}, BoldItalicFont={Lato Italic}', 'env')
     app.add_config_value('docdash_sans_font', 'Exo 2', 'env')
     app.add_config_value('docdash_mono_font', 'IosevkaTerm NF', 'env')
 
-    # Universal Element Customization Namespace
+    # Universal Element Customization Namespace & Sensible Initial Defaults
+    defaults = {
+        'chapter_number_color': '#0092FA',
+        'chapter_number_size': r'\fontsize{30pt}{30pt}\selectfont',
+        'section_number_color': '#D4D4D4',
+        'subsection_number_color': '#D4D4D4',
+        'subsubsection_number_color': '#D4D4D4',
+    }
+
     elements = [
         'title', 'subtitle', 'author', 'date', 'release_version', 
-        'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric'
+        'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
+        'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
     ]
+
     for el in elements:
-        app.add_config_value(f'docdash_{el}_font', None, 'env')
-        app.add_config_value(f'docdash_{el}_color', None, 'env')
-        app.add_config_value(f'docdash_{el}_size', None, 'env')
+        for attr in ['font', 'color', 'size']:
+            key = f'{el}_{attr}'
+            default_val = defaults.get(key, None)
+            app.add_config_value(f'docdash_{key}', default_val, 'env')
 
     app.connect('config-inited', config_inited, priority=900)
     app.connect('build-finished', build_finished)
