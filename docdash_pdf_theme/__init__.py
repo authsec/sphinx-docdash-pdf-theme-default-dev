@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.26"
+__version__ = "0.1.27"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -101,6 +101,8 @@ def config_inited(app, config):
 
         # Margin & Line Formatting Resolution
         global_margin = getattr(config, 'docdash_numbers_in_margin', True)
+        global_margin_space = getattr(config, 'docdash_heading_margin_space', None) or '1.5em'
+        
         for el in ['chapter', 'section', 'subsection', 'subsubsection']:
             # Margin toggle
             margin_val = getattr(config, f'docdash_{el}_number_margin', None)
@@ -115,8 +117,9 @@ def config_inited(app, config):
             height_val = getattr(config, f'docdash_{el}_line_height', None)
             template_vars[f'docdash_{el}_line_height'] = height_val if height_val else '10cm'
             
+            # Space Resolution: Specific -> Global -> Default
             space_val = getattr(config, f'docdash_{el}_margin_space', None)
-            template_vars[f'docdash_{el}_margin_space'] = space_val if space_val else '1.5em'
+            template_vars[f'docdash_{el}_margin_space'] = space_val if space_val else global_margin_space
 
         # Dynamically load Universal DocDash Namespace Elements
         elements = [
@@ -251,6 +254,7 @@ def setup(app):
     
     # Alignment Toggles
     app.add_config_value('docdash_heading_align', 'alternate', 'env') # 'alternate', 'left', 'right'
+    app.add_config_value('docdash_heading_margin_space', '1.5em', 'env') # Global default space
     for el in ['chapter', 'section', 'subsection', 'subsubsection']:
         app.add_config_value(f'docdash_{el}_align', None, 'env')
         app.add_config_value(f'docdash_{el}_number_margin', None, 'env')
