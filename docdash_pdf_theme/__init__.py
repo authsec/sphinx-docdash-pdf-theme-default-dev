@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.29"
+__version__ = "0.1.30"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -169,6 +169,7 @@ def config_inited(app, config):
             'title_font_color': '#FFFFFF',
             'title_font_size': r'\large\bfseries',
             'title_background_color': '#0092FA',
+            'title_icon_box_background_color': '#0092FA', # Matches titlebg by default
             'content_background_color': '#F8F9FA',
             'content_font': '',
             'content_font_color': '#000000',
@@ -176,7 +177,7 @@ def config_inited(app, config):
         }
 
         admon_types = ['generic', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention']
-        admon_props = ['title_icon', 'title_icon_color', 'title_icon_size', 'title_icon_padding', 'title_decoration_spacing', 'title_font', 'title_font_color', 'title_font_size', 'title_background_color', 'content_background_color', 'content_font', 'content_font_color', 'content_font_size']
+        admon_props = ['title_icon', 'title_icon_color', 'title_icon_size', 'title_icon_padding', 'title_decoration_spacing', 'title_font', 'title_font_color', 'title_font_size', 'title_background_color', 'title_icon_box_background_color', 'content_background_color', 'content_font', 'content_font_color', 'content_font_size']
 
         for t in admon_types:
             for p in admon_props:
@@ -313,7 +314,7 @@ def setup(app):
 
     # Admonition Customization Namespace
     admon_types = ['generic', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention']
-    admon_props = ['title_icon', 'title_icon_color', 'title_icon_size', 'title_icon_padding', 'title_decoration_spacing', 'title_font', 'title_font_color', 'title_font_size', 'title_background_color', 'content_background_color', 'content_font', 'content_font_color', 'content_font_size']
+    admon_props = ['title_icon', 'title_icon_color', 'title_icon_size', 'title_icon_padding', 'title_decoration_spacing', 'title_font', 'title_font_color', 'title_font_size', 'title_background_color', 'title_icon_box_background_color', 'content_background_color', 'content_font', 'content_font_color', 'content_font_size']
 
     for t in admon_types:
         for p in admon_props:
