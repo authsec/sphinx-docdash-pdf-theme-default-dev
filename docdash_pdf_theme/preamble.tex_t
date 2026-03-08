@@ -29,6 +29,9 @@
 
 %% Define the Number Line / Structure Colors
 <% if docdash_part_number_color %>\definecolor{ddpartnumbercolor}{cmyk}{<< docdash_part_number_color >>}<% endif %>
+<% if docdash_part_number_part_color %>\definecolor{ddpartnumberpartcolor}{cmyk}{<< docdash_part_number_part_color >>}<% endif %>
+<% if docdash_part_number_number_color %>\definecolor{ddpartnumbernumbercolor}{cmyk}{<< docdash_part_number_number_color >>}<% endif %>
+
 <% if docdash_chapter_number_color %>
 \definecolor{ddchapternumbercolor}{cmyk}{<< docdash_chapter_number_color >>}
 <% else %>
@@ -89,10 +92,22 @@
 <% endif %>
 
 %% Custom Elements for Structural Numbers
-%% The native KOMA element for the "Part X" line is `partnumber`
+%% The native KOMA element for the entire "Part X" line is `partnumber`
 <% if docdash_part_number_font or docdash_part_number_color or docdash_part_number_size %>
 \addtokomafont{partnumber}{<% if docdash_part_number_color %>\color{ddpartnumbercolor}<% endif %><% if docdash_part_number_size %><< docdash_part_number_size >><% endif %><% if docdash_part_number_font %>\fontspec{<< docdash_part_number_font >>}<% endif %>}
 <% endif %>
+
+%% Custom sub-elements specifically to split the Part String
+\newkomafont{partnumberpart}{}
+<% if docdash_part_number_part_font or docdash_part_number_part_color or docdash_part_number_part_size %>
+\addtokomafont{partnumberpart}{<% if docdash_part_number_part_color %>\color{ddpartnumberpartcolor}<% endif %><% if docdash_part_number_part_size %><< docdash_part_number_part_size >><% endif %><% if docdash_part_number_part_font %>\fontspec{<< docdash_part_number_part_font >>}<% endif %>}
+<% endif %>
+
+\newkomafont{partnumbernumber}{}
+<% if docdash_part_number_number_font or docdash_part_number_number_color or docdash_part_number_number_size %>
+\addtokomafont{partnumbernumber}{<% if docdash_part_number_number_color %>\color{ddpartnumbernumbercolor}<% endif %><% if docdash_part_number_number_size %><< docdash_part_number_number_size >><% endif %><% if docdash_part_number_number_font %>\fontspec{<< docdash_part_number_number_font >>}<% endif %>}
+<% endif %>
+
 
 \newkomafont{chapternumber}{}
 <% if docdash_chapter_number_font or docdash_chapter_number_color or docdash_chapter_number_size %>
@@ -169,9 +184,12 @@
   \@ifundefined{releasename}{}{\renewcommand{\releasename}{}}
 }
 <% endif %>
-
 \makeatother
 
+%% Force KOMA-Script to actively use the split partnumber elements for the "Part X" string
+\makeatletter
+\renewcommand*{\partformat}{{\usekomafont{partnumberpart}\partname\nobreakspace}{\usekomafont{partnumbernumber}\thepart\autodot}}
+\makeatother
 
 \renewcommand*{\chapterformat}{%
   \Ifthispageodd{%

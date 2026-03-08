@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.12"
+__version__ = "0.1.14"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -92,7 +92,8 @@ def config_inited(app, config):
         elements = [
             'title', 'subtitle', 'author', 'date', 'release_version', 
             'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
-            'part_number', 'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
+            'part_number', 'part_number_part', 'part_number_number', 
+            'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
         ]
         
         for el in elements:
@@ -124,13 +125,20 @@ def config_inited(app, config):
                             level = hierarchy[i]
                             key = f'docdash_{level}_{prop}'
                             
-                            # If the current level isn't explicitly defined, inherit from above
-                            if template_vars[key] is None:
+                            # If the current level isn't explicitly defined (None or empty string), inherit from above
+                            if not template_vars[key]:
                                 template_vars[key] = current_val
                             # If it IS defined, it becomes the new value to cascade downward
                             else:
                                 current_val = template_vars[key]
         # --- END INHERITANCE LOGIC ---
+
+        # Apply specific fallback logic for part_number split components
+        for prop in ['font', 'color', 'size']:
+            if not template_vars[f'docdash_part_number_part_{prop}']:
+                template_vars[f'docdash_part_number_part_{prop}'] = template_vars[f'docdash_part_number_{prop}']
+            if not template_vars[f'docdash_part_number_number_{prop}']:
+                template_vars[f'docdash_part_number_number_{prop}'] = template_vars[f'docdash_part_number_{prop}']
 
         my_preamble = template.render(**template_vars)
     else:
@@ -223,12 +231,16 @@ def setup(app):
         'title_page_color': '#FF9900',
         'chapter_number_color': '#0092FA',
         'chapter_number_size': r'\fontsize{30pt}{30pt}\selectfont',
+        'section_number_color': '#D4D4D4',
+        'subsection_number_color': '#D4D4D4',
+        'subsubsection_number_color': '#D4D4D4',
     }
 
     elements = [
         'title_page', 'title', 'subtitle', 'author', 'date', 'release_version', 
         'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
-        'part_number', 'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
+        'part_number', 'part_number_part', 'part_number_number', 
+        'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
     ]
 
     for el in elements:
