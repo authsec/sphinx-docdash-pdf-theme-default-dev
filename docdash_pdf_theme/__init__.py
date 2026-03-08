@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.20"
+__version__ = "0.1.21"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -89,6 +89,17 @@ def config_inited(app, config):
             'docdash_title_page_color': hex_to_cmyk_string(getattr(config, 'docdash_title_page_color', None)),
         }
         
+        # Heading Alignment Resolution
+        global_align = getattr(config, 'docdash_heading_align', 'alternate')
+        if global_align not in ['left', 'right', 'alternate']:
+            global_align = 'alternate'
+            
+        for el in ['chapter', 'section', 'subsection', 'subsubsection']:
+            val = getattr(config, f'docdash_{el}_align', None)
+            if val not in ['left', 'right', 'alternate']:
+                val = global_align
+            template_vars[f'docdash_{el}_align'] = val
+
         # Dynamically load Universal DocDash Namespace Elements
         elements = [
             'title', 'subtitle', 'author', 'date', 'release_version', 
@@ -177,7 +188,7 @@ def config_inited(app, config):
         if key not in config.latex_elements:
             config.latex_elements[key] = value
 
-    # ALWAYS append our preamble so the `normal` pagestyle fix isnt lost
+    # ALWAYS append our preamble so the `normal` pagestyle fix isn't lost
     if 'preamble' in config.latex_elements:
         config.latex_elements['preamble'] += f"\n{my_preamble}"
     else:
@@ -216,6 +227,11 @@ def setup(app):
     app.add_config_value('docdash_show_release', True, 'env')
     app.add_config_value('docdash_numbers_in_margin', True, 'env')
     
+    # Alignment Toggles
+    app.add_config_value('docdash_heading_align', 'alternate', 'env') # 'alternate', 'left', 'right'
+    for el in ['chapter', 'section', 'subsection', 'subsubsection']:
+        app.add_config_value(f'docdash_{el}_align', None, 'env')
+
     # Inheritance Toggles
     app.add_config_value('docdash_inherit_all', True, 'env')
     app.add_config_value('docdash_inherit_font', True, 'env')

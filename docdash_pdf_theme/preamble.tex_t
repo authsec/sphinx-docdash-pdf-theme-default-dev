@@ -208,66 +208,123 @@
 }
 \makeatother
 
+
 <% if docdash_numbers_in_margin %>
 %% ----------------------------------------------------
-%% NUMBERS IN MARGIN LOGIC (Default)
+%% NUMBERS IN MARGIN LOGIC 
+%% Setup dynamic alignment aliases 
 %% ----------------------------------------------------
-\renewcommand*{\chapterformat}{%
-  \Ifthispageodd{%
-    % ODD: Line starts 1ex below baseline and goes 2cm above
-    \smash{\textcolor{ddchapterlinecolor}{\rule[-1ex]{2pt}{10cm}}}%
-    \makebox[0pt][l]{%
-      \hspace{\marginparsep}%
-      \usekomafont{chapternumber}\thechapter%
-    }%
-  }{%
-    % EVEN: Symmetrical line and number for left margin
-    \makebox[0pt][r]{%
-      \usekomafont{chapternumber}\thechapter%
-      \hspace{\marginparsep}%
-    }%
-    \smash{\textcolor{ddchapterlinecolor}{\rule[-1ex]{2pt}{10cm}}}%
-  }%
+\makeatletter
+%% Reusable Macro Blocks for margin text alignment
+\def\docdash@chapter@align@right#1#2#3{%
+  \hfill
+  \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedleft\usekomafont{chapter}#3}% 
+  \hspace{1.5em}%
+  \makebox[0pt][l]{#2}%
+}
+\def\docdash@chapter@align@left#1#2#3{%
+  \makebox[0pt][r]{#2}%
+  \hspace{1.5em}%
+  \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedright\usekomafont{chapter}#3}%
+  \hfill
+}
+\def\docdash@chapter@align@alternate#1#2#3{%
+  \Ifthispageodd{\docdash@chapter@align@right{#1}{#2}{#3}}{\docdash@chapter@align@left{#1}{#2}{#3}}%
 }
 
+\def\docdash@chapterformat@right{%
+  \smash{\textcolor{ddchapterlinecolor}{\rule[-1ex]{2pt}{10cm}}}%
+  \makebox[0pt][l]{%
+    \hspace{\marginparsep}%
+    \usekomafont{chapternumber}\thechapter%
+  }%
+}
+\def\docdash@chapterformat@left{%
+  \makebox[0pt][r]{%
+    \usekomafont{chapternumber}\thechapter%
+    \hspace{\marginparsep}%
+  }%
+  \smash{\textcolor{ddchapterlinecolor}{\rule[-1ex]{2pt}{10cm}}}%
+}
+\def\docdash@chapterformat@alternate{%
+  \Ifthispageodd{\docdash@chapterformat@right}{\docdash@chapterformat@left}%
+}
+
+%% Reusable Macro Blocks for Sections
+\def\docdash@sec@align@alternate#1#2#3#4{%
+  \Ifthispageodd{\docdash@sec@align@right{#1}{#2}{#3}{#4}}{\docdash@sec@align@left{#1}{#2}{#3}{#4}}%
+}
+\def\docdash@sec@align@right#1#2#3#4{%
+  \raggedleft#4\makebox[0pt][l]{\hspace*{\marginparsep}\relax#3}%
+}
+\def\docdash@sec@align@left#1#2#3#4{%
+  \raggedright\makebox[0pt][r]{#3\hspace*{\dimexpr\marginparsep-\fontdimen2\font}\relax}#4%
+}
+
+%% Dynamic Alias Injection for Sections based on User Config
+<% if docdash_section_align == 'left' %>
+  \def\docdash@align@section{\docdash@sec@align@left}
+<% elif docdash_section_align == 'right' %>
+  \def\docdash@align@section{\docdash@sec@align@right}
+<% else %>
+  \def\docdash@align@section{\docdash@sec@align@alternate}
+<% endif %>
+
+<% if docdash_subsection_align == 'left' %>
+  \def\docdash@align@subsection{\docdash@sec@align@left}
+<% elif docdash_subsection_align == 'right' %>
+  \def\docdash@align@subsection{\docdash@sec@align@right}
+<% else %>
+  \def\docdash@align@subsection{\docdash@sec@align@alternate}
+<% endif %>
+
+<% if docdash_subsubsection_align == 'left' %>
+  \def\docdash@align@subsubsection{\docdash@sec@align@left}
+<% elif docdash_subsubsection_align == 'right' %>
+  \def\docdash@align@subsubsection{\docdash@sec@align@right}
+<% else %>
+  \def\docdash@align@subsubsection{\docdash@sec@align@alternate}
+<% endif %>
+
+%% Hook Chapter Format
+\renewcommand*{\chapterformat}{%
+<% if docdash_chapter_align == 'left' %>
+  \docdash@chapterformat@left
+<% elif docdash_chapter_align == 'right' %>
+  \docdash@chapterformat@right
+<% else %>
+  \docdash@chapterformat@alternate
+<% endif %>
+}
+
+%% Hook Chapter Layout
 \renewcommand*\chapterlinesformat[3]{%
   \Ifstr{#1}{chapter}{%
-    \Ifthispageodd{%
-      % ODD PAGE: [Title Block] [Gap] [Line | Number]
-      \hfill
-      % \usekomafont forces KOMA styling back into the parbox!
-      \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedleft\usekomafont{chapter}#3}% 
-      \hspace{1.5em}% This pushes the Title left, away from the margin edge
-      \makebox[0pt][l]{#2}% Anchor #2 at the 0-point of the margin
-    }{%
-      % EVEN PAGE: [Number | Line] [Gap] [Title Block]
-      \makebox[0pt][r]{#2}% Anchor #2 at the 0-point of the margin
-      \hspace{1.5em}% This pushes the Title right, away from the margin edge
-      % \usekomafont forces KOMA styling back into the parbox!
-      \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedright\usekomafont{chapter}#3}%
-      \hfill
-    }
+<% if docdash_chapter_align == 'left' %>
+    \docdash@chapter@align@left{#1}{#2}{#3}%
+<% elif docdash_chapter_align == 'right' %>
+    \docdash@chapter@align@right{#1}{#2}{#3}%
+<% else %>
+    \docdash@chapter@align@alternate{#1}{#2}{#3}%
+<% endif %>
   }{%
     \@hangfrom{#2}{#3}%
   }
 }
-\makeatletter
+
+%% Hook Section Layout
 \KOMAoption{numbers}{noendperiod}
 \renewcommand\sectionlinesformat[4]{%
-% Ensure that there is at least x amount of the page available to print on before setting a section.
-% If this is not the case, start a new page.
-% This also helps in correctly choosing the even/odd page section layout in edge cases.
-\needspace{.05\textheight}
+  % Ensure that there is at least x amount of the page available to print on before setting a section.
+  % If this is not the case, start a new page.
+  \needspace{.05\textheight}%
   \def\mycurrentnumberfont{\usekomafont{#1number}}%
-  \Ifthispageodd{%
-    \raggedleft#4\makebox[0pt][l]{\hspace*{\marginparsep}\relax\mycurrentnumberfont #3}%
+  \@ifundefined{docdash@align@#1}{%
+    \docdash@sec@align@alternate{#1}{#2}{\mycurrentnumberfont #3}{#4}%
   }{%
-    %% \fontdimen2\font gives the width of the 'n' character in the current font, which is the same as \enskip
-    %% That value is removed, as this is auto inserted after the section command (as defined in the sectionformat)
-    %% e.g. \renewcommand\sectionformat{\thesection\autodot\enskip}
-    \raggedright\makebox[0pt][r]{\mycurrentnumberfont #3\hspace*{\dimexpr\marginparsep-\fontdimen2\font}\relax}#4%
+    \@nameuse{docdash@align@#1}{#1}{#2}{\mycurrentnumberfont #3}{#4}%
   }%
-}%
+}
 \makeatother
 
 <% else %>
