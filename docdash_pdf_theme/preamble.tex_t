@@ -22,6 +22,7 @@
   \def\titlepage{%
     \orig@titlepage
     \pagecolor{titlepagecolor}%
+    %% Using modern LaTeX shipout hook to cleanly disable the color the exact moment Page 1 finishes!
     \AddToHookNext{shipout/after}{\nopagecolor}%
   }%
   \orig@sphinxmaketitle
@@ -354,6 +355,8 @@
   \expandafter\def\csname ddadmon@<< t >>@contentfont\endcsname{<% if v['docdash_admonition_' ~ t ~ '_content_font'] %>\fontspec{<< v['docdash_admonition_' ~ t ~ '_content_font'] >>}<% endif %><< v['docdash_admonition_' ~ t ~ '_content_font_size'] >>}
   \expandafter\def\csname ddadmon@<< t >>@iconsize\endcsname{<< v['docdash_admonition_' ~ t ~ '_title_icon_size'] >>}
   \expandafter\def\csname ddadmon@<< t >>@icon\endcsname{<< v['docdash_admonition_' ~ t ~ '_title_icon'] >>}
+  \expandafter\def\csname ddadmon@<< t >>@iconpad\endcsname{<< v['docdash_admonition_' ~ t ~ '_title_icon_padding'] >>}
+  \expandafter\def\csname ddadmon@<< t >>@decospace\endcsname{<< v['docdash_admonition_' ~ t ~ '_title_decoration_spacing'] >>}
 <% endfor %>
 
 \makeatletter
@@ -369,17 +372,26 @@
         coltext=ddadmon@#1@contentfg,
         fontupper=\csname ddadmon@#1@contentfont\endcsname,
         boxed title style={
-            empty, left=1ex, right=0pt,
-            frame code ={
-                \foreach \i [evaluate=\i as \ni using \i+2, count=\xi from 0, evaluate=\xi as \op using 1-2*\xi/10] in {10,11,12,13}{
-                    \draw[line width=.5mm, ddadmon@#1@titlebg, opacity=\op]([xshift=\i mm]frame.north east)--([xshift=\ni mm]frame.east)--([xshift=\i mm]frame.south east);
-                }
-            }
+            empty, left=1ex, right=0pt
         },
         underlay boxed title={
-            \path([xshift=3ex]title.east) node[inner sep=0pt] (ddicon) {{\csname ddadmon@#1@iconsize\endcsname\color{ddadmon@#1@iconfg}\csname ddadmon@#1@icon\endcsname}};
+            % Place Icon relative to text using padding
+            \path([xshift=\csname ddadmon@#1@iconpad\endcsname]title.east) node[inner sep=0pt] (ddicon) {{\csname ddadmon@#1@iconsize\endcsname\color{ddadmon@#1@iconfg}\csname ddadmon@#1@icon\endcsname}};
+            
+            % Anchor a precise coordinate exactly at the end of the icon + the user's spacer variable
+            \coordinate (dddeco) at ([xshift=\csname ddadmon@#1@decospace\endcsname]ddicon.east);
+            
+            % Draw the background fill all the way to our anchored coordinate
             \fill[fill=ddadmon@#1@titlebg](title.south west)--(title.north west)--(title.north east)--(title.south east);
-            \draw[ddadmon@#1@titlebg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]title.north east) -| ([xshift=2mm]ddicon.east) [sharp corners]|- (title.south west);
+            \draw[ddadmon@#1@titlebg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]title.north east) -| (dddeco) [sharp corners]|- (title.south west);
+            
+            % Draw the cascading chevron decoration perfectly pushed past the icon
+            \foreach \i [evaluate=\i as \ni using \i+2, count=\xi from 0, evaluate=\xi as \op using 1-2*\xi/10] in {0,1,2,3}{
+                \draw[line width=.5mm, ddadmon@#1@titlebg, opacity=\op]
+                ([xshift=\i mm]dddeco |- title.north) --
+                ([xshift=\ni mm]dddeco |- title.east) --
+                ([xshift=\i mm]dddeco |- title.south);
+            }
         },
         frame hidden,
         borderline west={1.5pt}{0pt}{ddadmon@#1@titlebg},

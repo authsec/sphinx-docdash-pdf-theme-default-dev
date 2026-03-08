@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.28"
+__version__ = "0.1.29"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -163,6 +163,8 @@ def config_inited(app, config):
             'title_icon': r'\textbf{i}',
             'title_icon_color': '#FFFFFF',
             'title_icon_size': '',
+            'title_icon_padding': '3ex',
+            'title_decoration_spacing': '2mm',
             'title_font': '',
             'title_font_color': '#FFFFFF',
             'title_font_size': r'\large\bfseries',
@@ -174,7 +176,7 @@ def config_inited(app, config):
         }
 
         admon_types = ['generic', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention']
-        admon_props = ['title_icon', 'title_icon_color', 'title_icon_size', 'title_font', 'title_font_color', 'title_font_size', 'title_background_color', 'content_background_color', 'content_font', 'content_font_color', 'content_font_size']
+        admon_props = ['title_icon', 'title_icon_color', 'title_icon_size', 'title_icon_padding', 'title_decoration_spacing', 'title_font', 'title_font_color', 'title_font_size', 'title_background_color', 'content_background_color', 'content_font', 'content_font_color', 'content_font_size']
 
         for t in admon_types:
             for p in admon_props:
@@ -185,7 +187,7 @@ def config_inited(app, config):
                     if t == 'generic':
                         val = generic_defaults[p]
                     else:
-                        val = template_vars[f'docdash_admonition_generic_{p}'] # Generic is processed first, so this is safe
+                        val = template_vars[f'docdash_admonition_generic_{p}']
                 
                 # Image Path Icon Detection
                 if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
@@ -196,7 +198,6 @@ def config_inited(app, config):
                 # Pre-calculate CMYK for colors
                 if p.endswith('_color'):
                     template_vars[f'docdash_admonition_{t}_{p}_cmyk'] = hex_to_cmyk_string(val)
-
 
         template_vars['v'] = template_vars
         my_preamble = template.render(**template_vars)
@@ -312,7 +313,7 @@ def setup(app):
 
     # Admonition Customization Namespace
     admon_types = ['generic', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention']
-    admon_props = ['title_icon', 'title_icon_color', 'title_icon_size', 'title_font', 'title_font_color', 'title_font_size', 'title_background_color', 'content_background_color', 'content_font', 'content_font_color', 'content_font_size']
+    admon_props = ['title_icon', 'title_icon_color', 'title_icon_size', 'title_icon_padding', 'title_decoration_spacing', 'title_font', 'title_font_color', 'title_font_size', 'title_background_color', 'content_background_color', 'content_font', 'content_font_color', 'content_font_size']
 
     for t in admon_types:
         for p in admon_props:
