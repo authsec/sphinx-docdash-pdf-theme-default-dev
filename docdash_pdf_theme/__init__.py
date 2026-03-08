@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.22"
+__version__ = "0.1.23"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -99,7 +99,7 @@ def config_inited(app, config):
                 val = global_align
             template_vars[f'docdash_{el}_align'] = val
 
-        # Margin & Line Formatting Resolution
+        # Margin & Line Formatting Resolution (Fixed None parsing issue)
         global_margin = getattr(config, 'docdash_numbers_in_margin', True)
         for el in ['chapter', 'section', 'subsection', 'subsubsection']:
             margin_val = getattr(config, f'docdash_{el}_number_margin', None)
@@ -109,7 +109,8 @@ def config_inited(app, config):
             default_line = True if el == 'chapter' else False
             template_vars[f'docdash_{el}_number_line'] = line_val if line_val is not None else default_line
             
-            template_vars[f'docdash_{el}_line_height'] = getattr(config, f'docdash_{el}_line_height', '10cm')
+            height_val = getattr(config, f'docdash_{el}_line_height', None)
+            template_vars[f'docdash_{el}_line_height'] = height_val if height_val is not None else '10cm'
 
         # Dynamically load Universal DocDash Namespace Elements
         elements = [
