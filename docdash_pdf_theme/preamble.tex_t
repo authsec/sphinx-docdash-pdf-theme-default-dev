@@ -371,8 +371,8 @@
         fonttitle=\csname ddadmon@#1@titlefont\endcsname,
         coltitle=ddadmon@#1@titlefg,
         colback=ddadmon@#1@contentbg,
-        % SAFELY dynamically switch to the nested background color if tcblayer > 1
-        code={\ifnum\value{tcblayer}>1 \tcbset{colback=ddadmon@#1@contentbgnested}\fi},
+        % Alternate background color on odd/even nesting depths!
+        code={\ifodd\value{tcblayer}\else \tcbset{colback=ddadmon@#1@contentbgnested}\fi},
         coltext=ddadmon@#1@contentfg,
         fontupper=\csname ddadmon@#1@contentfont\endcsname,
         boxed title style={
