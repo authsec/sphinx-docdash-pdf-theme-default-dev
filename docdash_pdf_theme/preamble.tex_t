@@ -233,8 +233,8 @@
 %% --------- CHAPTER ALIGNMENT LOGIC ---------
 \def\docdash@chapter@align@right#1#2#3{%
 <% if docdash_chapter_number_margin %>
-  \hfill\parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedleft\usekomafont{chapter}#3}%
-  \hspace{1.5em}%
+  \hfill\parbox[b]{\dimexpr\textwidth-<< docdash_chapter_margin_space >>\relax}{\raggedleft\usekomafont{chapter}#3}%
+  \hspace{<< docdash_chapter_margin_space >>}%
   \makebox[0pt][l]{<% if docdash_chapter_number_line %>\docdash@drawline{ddchapterlinecolor}{<< docdash_chapter_line_height >>}<% endif %>\hspace{\marginparsep}#2}%
 <% else %>
   \raggedleft\usekomafont{chapter}#2\enskip#3%
@@ -243,8 +243,8 @@
 \def\docdash@chapter@align@left#1#2#3{%
 <% if docdash_chapter_number_margin %>
   \makebox[0pt][r]{#2\hspace{\marginparsep}<% if docdash_chapter_number_line %>\docdash@drawline{ddchapterlinecolor}{<< docdash_chapter_line_height >>}<% endif %>}%
-  \hspace{1.5em}%
-  \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedright\usekomafont{chapter}#3}\hfill%
+  \hspace{<< docdash_chapter_margin_space >>}%
+  \parbox[b]{\dimexpr\textwidth-<< docdash_chapter_margin_space >>\relax}{\raggedright\usekomafont{chapter}#3}\hfill%
 <% else %>
   \raggedright\usekomafont{chapter}#2\enskip#3%
 <% endif %>
@@ -270,8 +270,8 @@
 
   \def\docdash@<< el >>@align@right#1#2#3#4{%
   <% if v['docdash_' ~ el ~ '_number_margin'] %>
-    \hfill\parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedleft\usekomafont{#1}#4}%
-    \hspace{1.5em}%
+    \hfill\parbox[b]{\dimexpr\textwidth-<< v['docdash_' ~ el ~ '_margin_space'] >>\relax}{\raggedleft\usekomafont{#1}#4}%
+    \hspace{<< v['docdash_' ~ el ~ '_margin_space'] >>}%
     \makebox[0pt][l]{<% if v['docdash_' ~ el ~ '_number_line'] %>\docdash@drawline{dd<< el >>linecolor}{<< v['docdash_' ~ el ~ '_line_height'] >>}<% endif %>\hspace{\marginparsep}#3}%
   <% else %>
     \raggedleft #3\enskip#4%
@@ -281,8 +281,8 @@
   \def\docdash@<< el >>@align@left#1#2#3#4{%
   <% if v['docdash_' ~ el ~ '_number_margin'] %>
     \makebox[0pt][r]{#3\hspace{\marginparsep}<% if v['docdash_' ~ el ~ '_number_line'] %>\docdash@drawline{dd<< el >>linecolor}{<< v['docdash_' ~ el ~ '_line_height'] >>}<% endif %>}%
-    \hspace{1.5em}%
-    \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedright\usekomafont{#1}#4}\hfill%
+    \hspace{<< v['docdash_' ~ el ~ '_margin_space'] >>}%
+    \parbox[b]{\dimexpr\textwidth-<< v['docdash_' ~ el ~ '_margin_space'] >>\relax}{\raggedright\usekomafont{#1}#4}\hfill%
   <% else %>
     \raggedright #3\enskip#4%
   <% endif %>

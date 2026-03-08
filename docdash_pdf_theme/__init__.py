@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.25"
+__version__ = "0.1.26"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -102,15 +102,21 @@ def config_inited(app, config):
         # Margin & Line Formatting Resolution
         global_margin = getattr(config, 'docdash_numbers_in_margin', True)
         for el in ['chapter', 'section', 'subsection', 'subsubsection']:
+            # Margin toggle
             margin_val = getattr(config, f'docdash_{el}_number_margin', None)
             template_vars[f'docdash_{el}_number_margin'] = margin_val if margin_val is not None else global_margin
             
+            # Line toggle
             line_val = getattr(config, f'docdash_{el}_number_line', None)
             default_line = True if el == 'chapter' else False
             template_vars[f'docdash_{el}_number_line'] = line_val if line_val is not None else default_line
             
+            # Dimensions
             height_val = getattr(config, f'docdash_{el}_line_height', None)
-            template_vars[f'docdash_{el}_line_height'] = height_val if height_val is not None else '10cm'
+            template_vars[f'docdash_{el}_line_height'] = height_val if height_val else '10cm'
+            
+            space_val = getattr(config, f'docdash_{el}_margin_space', None)
+            template_vars[f'docdash_{el}_margin_space'] = space_val if space_val else '1.5em'
 
         # Dynamically load Universal DocDash Namespace Elements
         elements = [
@@ -250,6 +256,7 @@ def setup(app):
         app.add_config_value(f'docdash_{el}_number_margin', None, 'env')
         app.add_config_value(f'docdash_{el}_number_line', None, 'env')
         app.add_config_value(f'docdash_{el}_line_height', None, 'env')
+        app.add_config_value(f'docdash_{el}_margin_space', None, 'env')
 
     # Inheritance Toggles
     app.add_config_value('docdash_inherit_all', True, 'env')
@@ -275,7 +282,6 @@ def setup(app):
     for el in elements:
         for attr in ['font', 'color', 'size']:
             key = f'{el}_{attr}'
-            # If not configured by the user, this resolves to None, disabling the logic perfectly
             app.add_config_value(f'docdash_{key}', None, 'env')
 
     app.connect('config-inited', config_inited, priority=900)
