@@ -7,11 +7,18 @@
 \pagestyle{scrheadings}
 
 %%% Style chapters
-%% Define core colors
+
+%% Define and apply the Title Page background color safely
 <% if docdash_title_page_color %>
 \definecolor{titlepagecolor}{cmyk}{<< docdash_title_page_color >>}
-<% else %>
-\definecolor{titlepagecolor}{cmyk}{0, 0, 0, 1}
+\makeatletter
+\let\orig@sphinxmaketitle\sphinxmaketitle
+\renewcommand{\sphinxmaketitle}{%
+  \pagecolor{titlepagecolor}% Apply color just before the title page
+  \orig@sphinxmaketitle% Render the title page
+  \nopagecolor% Clear the color immediately so it doesn't bleed to the TOC
+}
+\makeatother
 <% endif %>
 
 %% Define Universal Element Colors
@@ -184,15 +191,17 @@
   \@ifundefined{releasename}{}{\renewcommand{\releasename}{}}
 }
 <% endif %>
+\makeatother
 
 %% Force KOMA-Script to actively use the split partnumber elements for the "Part X" string.
 %% This MUST happen \AtBeginDocument so that Babel/Polyglossia language localizations don't overwrite it!
 \AtBeginDocument{
+  \makeatletter
   \@ifundefined{partformat}{}{%
     \renewcommand*{\partformat}{{\usekomafont{partnumberpart}\partname\nobreakspace}{\usekomafont{partnumbernumber}\thepart\autodot}}
   }
+  \makeatother
 }
-\makeatother
 
 \renewcommand*{\chapterformat}{%
   \Ifthispageodd{%

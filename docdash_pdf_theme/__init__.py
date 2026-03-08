@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.15"
+__version__ = "0.1.17"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -226,16 +226,7 @@ def setup(app):
     app.add_config_value('docdash_sans_font', 'Exo 2', 'env')
     app.add_config_value('docdash_mono_font', 'IosevkaTerm NF', 'env')
 
-    # Universal Element Customization Namespace & Sensible Initial Defaults
-    defaults = {
-        'title_page_color': '#FF9900',
-        'chapter_number_color': '#0092FA',
-        'chapter_number_size': r'\fontsize{30pt}{30pt}\selectfont',
-        'section_number_color': '#D4D4D4',
-        'subsection_number_color': '#D4D4D4',
-        'subsubsection_number_color': '#D4D4D4',
-    }
-
+    # Register Universal Element Customization Namespace with NO defaults
     elements = [
         'title_page', 'title', 'subtitle', 'author', 'date', 'release_version', 
         'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
@@ -246,8 +237,8 @@ def setup(app):
     for el in elements:
         for attr in ['font', 'color', 'size']:
             key = f'{el}_{attr}'
-            default_val = defaults.get(key, None)
-            app.add_config_value(f'docdash_{key}', default_val, 'env')
+            # If not configured by the user, this resolves to None, disabling the logic perfectly
+            app.add_config_value(f'docdash_{key}', None, 'env')
 
     app.connect('config-inited', config_inited, priority=900)
     app.connect('build-finished', build_finished)

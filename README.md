@@ -23,38 +23,118 @@ extensions = [
 
 ```
 
-**Note on LaTeX Engine:** This theme relies on `fontspec` and KOMA classes, which require LuaLaTeX. The extension will automatically set `latex_engine = 'lualatex'` if you haven't explicitly configured an engine. If you manually set it to something else (like `xelatex`), the build will proceed but generate a warning.
+**Note on LaTeX Engine:** This theme relies on `fontspec` and KOMA classes, which require LuaLaTeX. The extension will automatically set `latex_engine = 'lualatex'` if you haven't explicitly configured an engine.
 
 ---
 
 ## Features & Customization
 
-The theme provides sensible defaults, but you can easily override them using specific variables in your `conf.py`.
+The theme acts as a clean, minimalist canvas out of the box. **It applies zero colors or custom sizes unless you explicitly define them.** If an option is omitted from your configuration, the logic is seamlessly disabled, leaving you with standard KOMA-Script defaults.
 
-### 1. Dynamic File Generation
+All options are properly namespaced under `docdash_`.
 
-You **do not** need to specify `latex_documents` or `.xmpdata` files manually. The theme automatically generates the `.tex` and `.xmpdata` output names based on your `project` and `author` variables.
+### 1. The Classic "DocDash Look"
 
-### 2. Custom Colors
-
-You can customize the accent colors of your PDF using standard Hex codes. The theme will automatically convert these to the CMYK values required by LaTeX.
-
-Add these variables to your `conf.py` to override the defaults:
+If you want to instantly replicate the iconic orange and blue DocDash styling, simply copy and paste these defaults into your `conf.py`:
 
 ```python
-# --- Default Color Values ---
-docdash_titlepagecolor = '#FF9900'       # The main color used on the title page, more for the logo ...
-docdash_colorchapternumber = '#0092FA'   # The large chapter numbers
-docdash_colorsectionnumber = '#D4D4D4'   # Section numbering
-docdash_colorchapterline = None          # Optional. Defaults to a lighter shade of the chapter number color
+docdash_title_page_color = '#FF9900'
+docdash_chapter_number_color = '#0092FA'
+docdash_chapter_number_size = r'\fontsize{30pt}{30pt}\selectfont'
+docdash_section_number_color = '#D4D4D4'
+docdash_subsection_number_color = '#D4D4D4'
+docdash_subsubsection_number_color = '#D4D4D4'
 
 ```
 
-### 3. Custom Fonts
+### 2. Document Inheritance Hierarchy
 
-The theme uses `fontspec` to define system fonts. You can easily swap these out in your `conf.py`.
+The theme is capable of inheriting font, size, and color properties top-down through the document hierarchy (`part` -> `chapter` -> `section` -> `subsection` -> `subsubsection`). If you assign a font or color to your parts, all sub-sections will automatically inherit that styling unless you explicitly override them.
 
-> **Important:** Because LuaLaTeX compiles using system fonts, any font you specify here **must be installed on the operating system** running the Sphinx build.
+```python
+docdash_inherit_all = True    # Global kill-switch for inheritance
+docdash_inherit_font = True   # Automatically inherit font families downward
+docdash_inherit_color = True  # Automatically inherit hex colors downward
+docdash_inherit_size = False  # By default, we let KOMA natively handle font scaling.
+
+```
+
+### 3. Universal Element Namespacing
+
+You can precisely control the **color** (via Hex codes), **font** (via system font names), and **size** (via raw LaTeX string injections) of every major document element.
+
+> **Crucial Tip on Sizes & Spacing:** > When passing LaTeX commands to the `_size` variable, you must use Python "raw strings" (prefixing with an `r`) so the `\` is not interpreted as an escape character!
+> You can use standard relative sizes (like `r'\huge'` or `r'\normalsize'`), or exact point sizes using `r'\fontsize{32pt}{36pt}\selectfont'`.
+> The `\fontsize{}{}` command takes two parameters:
+> 1. **Font Size (e.g., `32pt`):** How large the text characters are.
+> 2. **Line Spacing / Baselineskip (e.g., `36pt`):** The vertical distance from the bottom of this line to the bottom of the next line below it.
+> 
+> 
+> *Design Hack:* If your subtitle feels too far away from your main title, you can artificially shrink the line spacing parameter on your main title to pull the subtitle upward! (e.g., `docdash_title_size = r'\fontsize{32pt}{14pt}\selectfont'`).
+
+```python
+# --- Universal DocDash Theme Overrides ---
+
+# Titles & Metadata
+docdash_title_font = 'Ubuntu'
+docdash_title_color = '#E63946'
+docdash_title_size = r'\fontsize{32pt}{36pt}\selectfont'
+
+docdash_subtitle = "My Document Subtitle"
+# docdash_subtitle_font = ...
+# docdash_subtitle_color = ...
+# docdash_subtitle_size = ...
+
+# docdash_author_font = ...
+# docdash_author_color = ...
+# docdash_author_size = ...
+
+docdash_show_release = False # Swallows the Release/Version string strictly for PDF Output
+# docdash_release_version_font = ...
+# docdash_release_version_color = ...
+# docdash_release_version_size = ...
+
+# docdash_date_font = ...
+# docdash_date_color = ...
+# docdash_date_size = ...
+
+# Document Structure Text
+docdash_part_font = 'Ewert'
+docdash_part_color = '#008734'
+# docdash_part_size = ...
+
+# docdash_chapter_font = ... (Inherits 'Ewert')
+# docdash_chapter_color = ... (Inherits '#008734')
+# docdash_chapter_size = ...
+
+# docdash_section_font = ... (Inherits 'Ewert')
+# docdash_section_color = ... (Inherits '#008734')
+# docdash_section_size = ...
+
+# Document Structure Numbers
+# The Part number layout ("Part I") can optionally be split into two pieces for complex font combinations:
+docdash_part_number_part_font = 'Kaushan Script'
+docdash_part_number_part_color = '#00FF11'
+docdash_part_number_part_size = r'\fontsize{32pt}{36pt}\selectfont'
+
+docdash_part_number_number_font = 'Oi'
+docdash_part_number_number_color = '#FFBB00'
+docdash_part_number_number_size = r'\fontsize{32pt}{36pt}\selectfont'
+
+# If left blank, they automatically fallback to these singular part_number values:
+# docdash_part_number_font = 'Kapakana'
+# docdash_part_number_color = '#00FF11'
+
+# Sphinx Specifics
+# docdash_rubric_font = ...
+docdash_rubric_color = '#A8DADC'
+# docdash_rubric_size = ...
+
+```
+
+### 4. Core Theme Fonts
+
+You can modify the overarching fallback fonts.
 
 ```python
 # --- Default Font Settings ---
@@ -63,43 +143,7 @@ docdash_main_font_options = 'BoldFont={Lato Regular}, ItalicFont={Lato Light Ita
 docdash_sans_font = 'Exo 2'
 docdash_mono_font = 'IosevkaTerm NF'
 
-# Example override:
-# docdash_main_font = 'Ubuntu'
-# docdash_main_font_options = '' # Clear the Lato-specific overrides if your new font handles weights automatically
-
 ```
 
-### 4. Margins & Layout
+> **Important:** Because LuaLaTeX compiles using system fonts, any font you specify here **must be installed on the operating system** running the Sphinx build.
 
-Override the default layout by defining `latex_elements` in your `conf.py`. Only the keys you define will be overridden; the rest of the theme defaults (like your custom colors and fonts) will remain intact.
-
-```python
-latex_elements = {
-    # Example: Changing the margins
-    'sphinxsetup': 'hmargin={1.5cm,2.5cm}, vmargin={2cm,2cm}, marginpar=2.5cm'
-}
-
-```
-
-### 5. Logos & Standard Sphinx Options
-
-If you specify a logo, the theme will automatically handle adding it to the required LaTeX files:
-
-```python
-latex_logo = '_static/my-custom-logo.png'
-
-```
-
-Standard Sphinx LaTeX options remain fully configurable by the user, for example:
-
-```python
-latex_appendices = ['glossary', 'appendices', 'references']
-
-```
-
----
-
-## Requirements
-
-* A full `texlive` installation is expected in the build environment.
-* The system building the documentation must have the specified fonts installed natively.
