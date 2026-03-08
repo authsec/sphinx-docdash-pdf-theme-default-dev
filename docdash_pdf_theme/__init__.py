@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.35"
+__version__ = "0.1.36"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -171,7 +171,7 @@ def config_inited(app, config):
             'title_background_color': '#0092FA',
             'title_icon_box_background_color': '#0092FA', 
             'content_background_color': '#F8F9FA',
-            'content_background_color_nested': '#FFFFFF', # Pure white canvas reset for nested blocks
+            'content_background_color_nested': '#FFFFFF',
             'content_font': '',
             'content_font_color': '#000000',
             'content_font_size': r'\normalsize'
