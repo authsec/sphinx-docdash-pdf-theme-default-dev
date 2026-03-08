@@ -392,7 +392,8 @@
 
             % 2. DRAW NEW separate Icon Box Background 
             \fill[fill=ddadmon@#1@iconboxbg](icon_box_start |- title.south)--(icon_box_start |- title.north)--(icon_box_end |- title.north)--(icon_box_end |- title.south)--cycle;
-            \draw[ddadmon@#1@iconboxbg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]icon_box_start |- title.north) -| (icon_box_end) [sharp corners]|- (icon_box_start |- title.south); 
+            % NOTE: We outline the icon box with the titlebg stroke to maintain border consistency!
+            \draw[ddadmon@#1@titlebg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]icon_box_start |- title.north) -| (icon_box_end) [sharp corners]|- (icon_box_start |- title.south); 
 
             % 3. CENTER the icon explicitly within the new iconbox
             \path(dddeco_center) node[inner sep=0pt] (ddicon) {{\csname ddadmon@#1@iconsize\endcsname\color{ddadmon@#1@iconfg}\csname ddadmon@#1@icon\endcsname}};

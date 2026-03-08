@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.31"
+__version__ = "0.1.32"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
