@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.7"
+__version__ = "0.1.8"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -82,8 +82,9 @@ def config_inited(app, config):
         )
         template = env.from_string(template_content)
         
-        # Legacy/Specific Theme Colors
+        # Legacy/Specific Theme Colors & New Subtitle Text
         template_vars = {
+            'docdash_subtitle': getattr(config, 'docdash_subtitle', None),
             'titlepagecolor': hex_to_cmyk_string(config.docdash_titlepagecolor) or "0, 0, 0, 1",
             'colorchapternumber': hex_to_cmyk_string(config.docdash_colorchapternumber) or "0, 0, 0, 1",
             'colorsectionnumber': hex_to_cmyk_string(config.docdash_colorsectionnumber) or "0, 0, 0, 1",
@@ -170,6 +171,9 @@ def build_finished(app, exception):
     xmp_path.write_text(xmp_content, encoding='utf-8')
 
 def setup(app):
+    # Core Text Elements
+    app.add_config_value('docdash_subtitle', None, 'env')
+
     # Core Base Colors
     app.add_config_value('docdash_titlepagecolor', '#FF9900', 'env') 
     app.add_config_value('docdash_colorchapternumber', '#0092FA', 'env') 

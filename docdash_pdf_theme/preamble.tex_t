@@ -91,7 +91,13 @@
 %% Hook into Sphinx's title elements to force KOMA font injection onto the Sphinx title page
 \makeatletter
 \let\orig@title\title
+
+%% If the user defined a subtitle, gracefully append it underneath the main title
+<% if docdash_subtitle %>
+\renewcommand{\title}[1]{\orig@title{\texorpdfstring{\usekomafont{title}#1\\[0.5em]{\usekomafont{subtitle}<< docdash_subtitle >>}}{#1 - << docdash_subtitle >>}}}
+<% else %>
 \renewcommand{\title}[1]{\orig@title{\texorpdfstring{\usekomafont{title}#1}{#1}}}
+<% endif %>
 
 \let\orig@author\author
 \renewcommand{\author}[1]{\orig@author{\texorpdfstring{\usekomafont{author}#1}{#1}}}
