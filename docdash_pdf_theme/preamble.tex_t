@@ -80,6 +80,22 @@
 \makeatother
 <% endif %>
 
+%% Hook into Sphinx's title elements to force KOMA font injection onto the Sphinx title page
+\makeatletter
+\let\orig@title\title
+\renewcommand{\title}[1]{\orig@title{\texorpdfstring{\usekomafont{title}#1}{#1}}}
+
+\let\orig@author\author
+\renewcommand{\author}[1]{\orig@author{\texorpdfstring{\usekomafont{author}#1}{#1}}}
+
+\let\orig@date\date
+\renewcommand{\date}[1]{\orig@date{\texorpdfstring{\usekomafont{date}#1}{#1}}}
+
+% Sphinx's "release" macro acts as the subtitle on the title page
+\let\orig@release\release
+\renewcommand{\release}[1]{\orig@release{\texorpdfstring{\usekomafont{subtitle}#1}{#1}}}
+\makeatother
+
 
 \renewcommand*{\chapterformat}{%
   \Ifthispageodd{%
@@ -104,14 +120,16 @@
     \Ifthispageodd{%
       % ODD PAGE: [Title Block] [Gap] [Line | Number]
       \hfill
-      \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedleft #3}% 
+      % \usekomafont forces KOMA styling back into the parbox!
+      \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedleft\usekomafont{chapter}#3}% 
       \hspace{1.5em}% This pushes the Title left, away from the margin edge
       \makebox[0pt][l]{#2}% Anchor #2 at the 0-point of the margin
     }{%
       % EVEN PAGE: [Number | Line] [Gap] [Title Block]
       \makebox[0pt][r]{#2}% Anchor #2 at the 0-point of the margin
       \hspace{1.5em}% This pushes the Title right, away from the margin edge
-      \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedright #3}%
+      % \usekomafont forces KOMA styling back into the parbox!
+      \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedright\usekomafont{chapter}#3}%
       \hfill
     }
   }{%
