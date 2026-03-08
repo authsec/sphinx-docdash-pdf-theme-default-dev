@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.21"
+__version__ = "0.1.22"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -85,7 +85,6 @@ def config_inited(app, config):
         template_vars = {
             'docdash_subtitle': getattr(config, 'docdash_subtitle', None),
             'docdash_show_release': getattr(config, 'docdash_show_release', True),
-            'docdash_numbers_in_margin': getattr(config, 'docdash_numbers_in_margin', True),
             'docdash_title_page_color': hex_to_cmyk_string(getattr(config, 'docdash_title_page_color', None)),
         }
         
@@ -100,12 +99,25 @@ def config_inited(app, config):
                 val = global_align
             template_vars[f'docdash_{el}_align'] = val
 
+        # Margin & Line Formatting Resolution
+        global_margin = getattr(config, 'docdash_numbers_in_margin', True)
+        for el in ['chapter', 'section', 'subsection', 'subsubsection']:
+            margin_val = getattr(config, f'docdash_{el}_number_margin', None)
+            template_vars[f'docdash_{el}_number_margin'] = margin_val if margin_val is not None else global_margin
+            
+            line_val = getattr(config, f'docdash_{el}_number_line', None)
+            default_line = True if el == 'chapter' else False
+            template_vars[f'docdash_{el}_number_line'] = line_val if line_val is not None else default_line
+            
+            template_vars[f'docdash_{el}_line_height'] = getattr(config, f'docdash_{el}_line_height', '10cm')
+
         # Dynamically load Universal DocDash Namespace Elements
         elements = [
             'title', 'subtitle', 'author', 'date', 'release_version', 
             'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
             'part_number', 'part_number_part', 'part_number_number', 
-            'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
+            'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number',
+            'chapter_line', 'section_line', 'subsection_line', 'subsubsection_line'
         ]
         
         for el in elements:
@@ -118,7 +130,8 @@ def config_inited(app, config):
         if getattr(config, 'docdash_inherit_all', True):
             hierarchies = [
                 ['part', 'chapter', 'section', 'subsection', 'subsubsection'],
-                ['part_number', 'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number']
+                ['part_number', 'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number'],
+                ['chapter_line', 'section_line', 'subsection_line', 'subsubsection_line']
             ]
             properties = [
                 ('font', getattr(config, 'docdash_inherit_font', True)),
@@ -152,6 +165,8 @@ def config_inited(app, config):
             if not template_vars[f'docdash_part_number_number_{prop}']:
                 template_vars[f'docdash_part_number_number_{prop}'] = template_vars[f'docdash_part_number_{prop}']
 
+        # Self-reference for dynamic Jinja lookups
+        template_vars['v'] = template_vars
         my_preamble = template.render(**template_vars)
     else:
         logger.warning("[DocDash PDF Theme] Could not find preamble.tex_t template.")
@@ -231,6 +246,9 @@ def setup(app):
     app.add_config_value('docdash_heading_align', 'alternate', 'env') # 'alternate', 'left', 'right'
     for el in ['chapter', 'section', 'subsection', 'subsubsection']:
         app.add_config_value(f'docdash_{el}_align', None, 'env')
+        app.add_config_value(f'docdash_{el}_number_margin', None, 'env')
+        app.add_config_value(f'docdash_{el}_number_line', None, 'env')
+        app.add_config_value(f'docdash_{el}_line_height', None, 'env')
 
     # Inheritance Toggles
     app.add_config_value('docdash_inherit_all', True, 'env')
@@ -249,7 +267,8 @@ def setup(app):
         'title_page', 'title', 'subtitle', 'author', 'date', 'release_version', 
         'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
         'part_number', 'part_number_part', 'part_number_number', 
-        'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
+        'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number',
+        'chapter_line', 'section_line', 'subsection_line', 'subsubsection_line'
     ]
 
     for el in elements:

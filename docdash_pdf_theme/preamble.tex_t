@@ -50,12 +50,6 @@
 \definecolor{ddchapternumbercolor}{cmyk}{0, 0, 0, 1}
 <% endif %>
 
-<% if docdash_chapter_line_color %>
-\definecolor{ddchapterlinecolor}{cmyk}{<< docdash_chapter_line_color >>}
-<% else %>
-\colorlet{ddchapterlinecolor}{ddchapternumbercolor!45}
-<% endif %>
-
 <% if docdash_section_number_color %>\definecolor{ddsectionnumbercolor}{cmyk}{<< docdash_section_number_color >>}<% endif %>
 <% if docdash_subsection_number_color %>\definecolor{ddsubsectionnumbercolor}{cmyk}{<< docdash_subsection_number_color >>}<% endif %>
 <% if docdash_subsubsection_number_color %>\definecolor{ddsubsubsectionnumbercolor}{cmyk}{<< docdash_subsubsection_number_color >>}<% endif %>
@@ -209,134 +203,103 @@
 \makeatother
 
 
-<% if docdash_numbers_in_margin %>
 %% ----------------------------------------------------
-%% NUMBERS IN MARGIN LOGIC 
-%% Setup dynamic alignment aliases 
+%% DYNAMIC HEADING ALIGNMENT & MARGIN FORMATTING
 %% ----------------------------------------------------
 \makeatletter
-%% Reusable Macro Blocks for margin text alignment
+
+\def\docdash@drawline#1#2{%
+  \smash{\textcolor{#1}{\rule[-1ex]{2pt}{#2}}}%
+}
+
+%% Strip KOMA formatting artifacts so we have total layout control
+\renewcommand*{\chapterformat}{\usekomafont{chapternumber}\thechapter\autodot}
+\renewcommand*{\sectionformat}{\usekomafont{sectionnumber}\thesection\autodot}
+\renewcommand*{\subsectionformat}{\usekomafont{subsectionnumber}\thesubsection\autodot}
+\renewcommand*{\subsubsectionformat}{\usekomafont{subsubsectionnumber}\thesubsubsection\autodot}
+
+<% if docdash_chapter_line_color %>
+\definecolor{ddchapterlinecolor}{cmyk}{<< docdash_chapter_line_color >>}
+<% else %>
+\colorlet{ddchapterlinecolor}{ddchapternumbercolor!45}
+<% endif %>
+
+%% --------- CHAPTER ALIGNMENT LOGIC ---------
 \def\docdash@chapter@align@right#1#2#3{%
-  \hfill
-  \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedleft\usekomafont{chapter}#3}% 
+<% if docdash_chapter_number_margin %>
+  \hfill\parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedleft\usekomafont{chapter}#3}%
   \hspace{1.5em}%
-  \makebox[0pt][l]{#2}%
+  \makebox[0pt][l]{<% if docdash_chapter_number_line %>\docdash@drawline{ddchapterlinecolor}{<< docdash_chapter_line_height >>}<% endif %>\hspace{\marginparsep}#2}%
+<% else %>
+  \raggedleft\usekomafont{chapter}#2\enskip#3%
+<% endif %>
 }
 \def\docdash@chapter@align@left#1#2#3{%
-  \makebox[0pt][r]{#2}%
+<% if docdash_chapter_number_margin %>
+  \makebox[0pt][r]{#2\hspace{\marginparsep}<% if docdash_chapter_number_line %>\docdash@drawline{ddchapterlinecolor}{<< docdash_chapter_line_height >>}<% endif %>}%
   \hspace{1.5em}%
-  \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedright\usekomafont{chapter}#3}%
-  \hfill
-}
-\def\docdash@chapter@align@alternate#1#2#3{%
-  \Ifthispageodd{\docdash@chapter@align@right{#1}{#2}{#3}}{\docdash@chapter@align@left{#1}{#2}{#3}}%
-}
-
-\def\docdash@chapterformat@right{%
-  \smash{\textcolor{ddchapterlinecolor}{\rule[-1ex]{2pt}{10cm}}}%
-  \makebox[0pt][l]{%
-    \hspace{\marginparsep}%
-    \usekomafont{chapternumber}\thechapter%
-  }%
-}
-\def\docdash@chapterformat@left{%
-  \makebox[0pt][r]{%
-    \usekomafont{chapternumber}\thechapter%
-    \hspace{\marginparsep}%
-  }%
-  \smash{\textcolor{ddchapterlinecolor}{\rule[-1ex]{2pt}{10cm}}}%
-}
-\def\docdash@chapterformat@alternate{%
-  \Ifthispageodd{\docdash@chapterformat@right}{\docdash@chapterformat@left}%
-}
-
-%% Reusable Macro Blocks for Sections
-\def\docdash@sec@align@alternate#1#2#3#4{%
-  \Ifthispageodd{\docdash@sec@align@right{#1}{#2}{#3}{#4}}{\docdash@sec@align@left{#1}{#2}{#3}{#4}}%
-}
-\def\docdash@sec@align@right#1#2#3#4{%
-  \raggedleft#4\makebox[0pt][l]{\hspace*{\marginparsep}\relax#3}%
-}
-\def\docdash@sec@align@left#1#2#3#4{%
-  \raggedright\makebox[0pt][r]{#3\hspace*{\dimexpr\marginparsep-\fontdimen2\font}\relax}#4%
-}
-
-%% Dynamic Alias Injection for Sections based on User Config
-<% if docdash_section_align == 'left' %>
-  \def\docdash@align@section{\docdash@sec@align@left}
-<% elif docdash_section_align == 'right' %>
-  \def\docdash@align@section{\docdash@sec@align@right}
+  \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedright\usekomafont{chapter}#3}\hfill%
 <% else %>
-  \def\docdash@align@section{\docdash@sec@align@alternate}
+  \raggedright\usekomafont{chapter}#2\enskip#3%
 <% endif %>
+}
+\def\docdash@chapter@align@alternate#1#2#3{\Ifthispageodd{\docdash@chapter@align@right{#1}{#2}{#3}}{\docdash@chapter@align@left{#1}{#2}{#3}}}
 
-<% if docdash_subsection_align == 'left' %>
-  \def\docdash@align@subsection{\docdash@sec@align@left}
-<% elif docdash_subsection_align == 'right' %>
-  \def\docdash@align@subsection{\docdash@sec@align@right}
-<% else %>
-  \def\docdash@align@subsection{\docdash@sec@align@alternate}
-<% endif %>
-
-<% if docdash_subsubsection_align == 'left' %>
-  \def\docdash@align@subsubsection{\docdash@sec@align@left}
-<% elif docdash_subsubsection_align == 'right' %>
-  \def\docdash@align@subsubsection{\docdash@sec@align@right}
-<% else %>
-  \def\docdash@align@subsubsection{\docdash@sec@align@alternate}
-<% endif %>
-
-%% Hook Chapter Format
-\renewcommand*{\chapterformat}{%
 <% if docdash_chapter_align == 'left' %>
-  \docdash@chapterformat@left
+  \renewcommand*\chapterlinesformat[3]{\Ifstr{#1}{chapter}{\docdash@chapter@align@left{#1}{#2}{#3}}{\@hangfrom{#2}{#3}}}
 <% elif docdash_chapter_align == 'right' %>
-  \docdash@chapterformat@right
+  \renewcommand*\chapterlinesformat[3]{\Ifstr{#1}{chapter}{\docdash@chapter@align@right{#1}{#2}{#3}}{\@hangfrom{#2}{#3}}}
 <% else %>
-  \docdash@chapterformat@alternate
+  \renewcommand*\chapterlinesformat[3]{\Ifstr{#1}{chapter}{\docdash@chapter@align@alternate{#1}{#2}{#3}}{\@hangfrom{#2}{#3}}}
 <% endif %>
-}
 
-%% Hook Chapter Layout
-\renewcommand*\chapterlinesformat[3]{%
-  \Ifstr{#1}{chapter}{%
-<% if docdash_chapter_align == 'left' %>
-    \docdash@chapter@align@left{#1}{#2}{#3}%
-<% elif docdash_chapter_align == 'right' %>
-    \docdash@chapter@align@right{#1}{#2}{#3}%
-<% else %>
-    \docdash@chapter@align@alternate{#1}{#2}{#3}%
-<% endif %>
-  }{%
-    \@hangfrom{#2}{#3}%
+%% --------- SECTION ALIGNMENT LOGIC ---------
+<% for el in ['section', 'subsection', 'subsubsection'] %>
+
+  <% if v['docdash_' ~ el ~ '_line_color'] %>
+    \definecolor{dd<< el >>linecolor}{cmyk}{<< v['docdash_' ~ el ~ '_line_color'] >>}
+  <% else %>
+    \colorlet{dd<< el >>linecolor}{dd<< el >>numbercolor!45}
+  <% endif %>
+
+  \def\docdash@<< el >>@align@right#1#2#3#4{%
+  <% if v['docdash_' ~ el ~ '_number_margin'] %>
+    \raggedleft#4\makebox[0pt][l]{\hspace{\marginparsep}<% if v['docdash_' ~ el ~ '_number_line'] %>\docdash@drawline{dd<< el >>linecolor}{<< v['docdash_' ~ el ~ '_line_height'] >>}<% endif %>#3}%
+  <% else %>
+    \raggedleft #3\enskip#4%
+  <% endif %>
   }
-}
+  
+  \def\docdash@<< el >>@align@left#1#2#3#4{%
+  <% if v['docdash_' ~ el ~ '_number_margin'] %>
+    \raggedright\makebox[0pt][r]{#3<% if v['docdash_' ~ el ~ '_number_line'] %>\docdash@drawline{dd<< el >>linecolor}{<< v['docdash_' ~ el ~ '_line_height'] >>}<% endif %>\hspace{\marginparsep}}#4%
+  <% else %>
+    \raggedright #3\enskip#4%
+  <% endif %>
+  }
+  
+  \def\docdash@<< el >>@align@alternate#1#2#3#4{\Ifthispageodd{\docdash@<< el >>@align@right{#1}{#2}{#3}{#4}}{\docdash@<< el >>@align@left{#1}{#2}{#3}{#4}}}
 
-%% Hook Section Layout
+  <% if v['docdash_' ~ el ~ '_align'] == 'left' %>
+    \expandafter\def\csname docdash@align@<< el >>\endcsname{\docdash@<< el >>@align@left}
+  <% elif v['docdash_' ~ el ~ '_align'] == 'right' %>
+    \expandafter\def\csname docdash@align@<< el >>\endcsname{\docdash@<< el >>@align@right}
+  <% else %>
+    \expandafter\def\csname docdash@align@<< el >>\endcsname{\docdash@<< el >>@align@alternate}
+  <% endif %>
+
+<% endfor %>
+
 \KOMAoption{numbers}{noendperiod}
 \renewcommand\sectionlinesformat[4]{%
-  % Ensure that there is at least x amount of the page available to print on before setting a section.
-  % If this is not the case, start a new page.
   \needspace{.05\textheight}%
-  \def\mycurrentnumberfont{\usekomafont{#1number}}%
   \@ifundefined{docdash@align@#1}{%
-    \docdash@sec@align@alternate{#1}{#2}{\mycurrentnumberfont #3}{#4}%
+    \@hangfrom{#3}{#4}%
   }{%
-    \@nameuse{docdash@align@#1}{#1}{#2}{\mycurrentnumberfont #3}{#4}%
+    \@nameuse{docdash@align@#1}{#1}{#2}{#3}{#4}%
   }%
 }
 \makeatother
-
-<% else %>
-%% ----------------------------------------------------
-%% INLINE NUMBERS LOGIC (docdash_numbers_in_margin = False)
-%% ----------------------------------------------------
-\renewcommand*{\chapterformat}{\usekomafont{chapternumber}\thechapter\autodot\enskip}
-\renewcommand*{\sectionformat}{\usekomafont{sectionnumber}\thesection\autodot\enskip}
-\renewcommand*{\subsectionformat}{\usekomafont{subsectionnumber}\thesubsection\autodot\enskip}
-\renewcommand*{\subsubsectionformat}{\usekomafont{subsubsectionnumber}\thesubsubsection\autodot\enskip}
-<% endif %>
-
 
 %%% Style chapters
 
