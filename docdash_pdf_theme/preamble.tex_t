@@ -105,6 +105,7 @@
 \let\orig@date\date
 \renewcommand{\date}[1]{\orig@date{\texorpdfstring{\usekomafont{date}#1}{#1}}}
 
+<% if docdash_show_release %>
 % Sphinx splits the release line into two macros: \releasename ("Release") and \version ("0.0.1").
 % We apply the komafont to both so the entire line matches.
 \let\orig@release\release
@@ -116,6 +117,14 @@
     \renewcommand{\releasename}{\texorpdfstring{\usekomafont{releaseversion}\orig@releasename}{\orig@releasename}}
   }
 }
+<% else %>
+% User disabled the release text entirely for PDF!
+\renewcommand{\release}[1]{}
+\AtBeginDocument{
+  \@ifundefined{releasename}{}{\renewcommand{\releasename}{}}
+}
+<% endif %>
+
 \makeatother
 
 
