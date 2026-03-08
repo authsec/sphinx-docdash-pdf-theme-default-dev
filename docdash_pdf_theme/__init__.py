@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.32"
+__version__ = "0.1.33"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -169,7 +169,7 @@ def config_inited(app, config):
             'title_font_color': '#FFFFFF',
             'title_font_size': r'\large\bfseries',
             'title_background_color': '#0092FA',
-            'title_icon_box_background_color': '#0092FA', # Matches titlebg by default
+            'title_icon_box_background_color': '#0092FA',
             'content_background_color': '#F8F9FA',
             'content_font': '',
             'content_font_color': '#000000',
@@ -192,7 +192,8 @@ def config_inited(app, config):
                 
                 # Image Path Icon Detection
                 if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
-                    val = f"\\vcenter{{\\hbox{{\\includegraphics[height=1em, keepaspectratio]{{{val}}}}}}}"
+                    # Removed \vcenter and \hbox; TikZ automatically centers \includegraphics vertically in nodes!
+                    val = f"\\includegraphics[height=1em, keepaspectratio]{{{val}}}"
 
                 template_vars[f'docdash_admonition_{t}_{p}'] = val
                 
