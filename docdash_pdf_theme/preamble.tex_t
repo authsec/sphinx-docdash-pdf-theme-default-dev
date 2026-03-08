@@ -348,6 +348,7 @@
   \definecolor{ddadmon@<< t >>@titlebg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_title_background_color_cmyk'] >>}
   \definecolor{ddadmon@<< t >>@iconboxbg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_title_icon_box_background_color_cmyk'] >>}
   \definecolor{ddadmon@<< t >>@contentbg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_content_background_color_cmyk'] >>}
+  \definecolor{ddadmon@<< t >>@contentbgnested}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_content_background_color_nested_cmyk'] >>}
   \definecolor{ddadmon@<< t >>@titlefg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_title_font_color_cmyk'] >>}
   \definecolor{ddadmon@<< t >>@contentfg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_content_font_color_cmyk'] >>}
   \definecolor{ddadmon@<< t >>@iconfg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_title_icon_color_cmyk'] >>}
@@ -369,37 +370,29 @@
         attach boxed title to top left,
         fonttitle=\csname ddadmon@#1@titlefont\endcsname,
         coltitle=ddadmon@#1@titlefg,
-        colback=ddadmon@#1@contentbg,
+        % NEW: Check nesting layer. If we are deep, use the nested canvas reset color!
+        colback=\ifnum\tcblayer>1 ddadmon@#1@contentbgnested \else ddadmon@#1@contentbg \fi,
         coltext=ddadmon@#1@contentfg,
         fontupper=\csname ddadmon@#1@contentfont\endcsname,
         boxed title style={
             empty, left=1ex, right=0pt
         },
         underlay boxed title={
-            % Define the coordinate that splits the bar
-            \coordinate (text_box_end) at ([xshift=1ex]title.east); % Edge of text area padding
+            \coordinate (text_box_end) at ([xshift=1ex]title.east); 
 
-            % Resolve Icon Box Dimensions (Padding)
             \coordinate (icon_box_start) at (text_box_end);
             \coordinate (icon_box_end) at ([xshift=\csname ddadmon@#1@iconpad\endcsname]icon_box_start);
             \coordinate (dddeco_center) at ($ (icon_box_start)!.5!(icon_box_end) $); 
 
-            % DRAWING ORDER MATTERS
-
-            % 1. DRAW Main Title Text Background 
             \fill[fill=ddadmon@#1@titlebg](title.south west)--(title.north west)--(text_box_end |- title.north)--(text_box_end |- title.south)--cycle;
             \draw[ddadmon@#1@titlebg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]title.north west) -| (text_box_end) [sharp corners]|- (title.south west); 
 
-            % 2. DRAW NEW separate Icon Box Background 
             \fill[fill=ddadmon@#1@iconboxbg](icon_box_start |- title.south)--(icon_box_start |- title.north)--(icon_box_end |- title.north)--(icon_box_end |- title.south)--cycle;
-            % NOTE: We outline the icon box with the titlebg stroke to maintain border consistency!
             \draw[ddadmon@#1@titlebg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]icon_box_start |- title.north) -| (icon_box_end) [sharp corners]|- (icon_box_start |- title.south); 
 
-            % 3. CENTER the icon explicitly within the new iconbox
             \path(dddeco_center) node[inner sep=0pt] (ddicon) {{\csname ddadmon@#1@iconsize\endcsname\color{ddadmon@#1@iconfg}\csname ddadmon@#1@icon\endcsname}};
 
-            % 4. Draw the cascading chevron decoration past the centered icon (relative to the user's spacer variable)
-            \coordinate (dddeco) at ([xshift=\csname ddadmon@#1@decospace\endcsname]icon_box_end); % Anchored end point
+            \coordinate (dddeco) at ([xshift=\csname ddadmon@#1@decospace\endcsname]icon_box_end); 
 
             \foreach \i [evaluate=\i as \ni using \i+2, count=\xi from 0, evaluate=\xi as \op using 1-2*\xi/10] in {0,1,2,3}{
                 \draw[line width=.5mm, ddadmon@#1@titlebg, opacity=\op]
@@ -423,9 +416,6 @@
 
 %% 4. Hook into Sphinx's master admonition macro
 \renewenvironment{sphinxadmonition}[2]{%
-    % #1 is the admonition type (e.g. "note"), #2 is the rendered title
-    % We use \@ifundefined on the generated icon macro to check if this type was generated.
-    % If a random sphinx extension sends an unknown type, it safely falls back to 'generic'.
     \@ifundefined{ddadmon@#1@icon}{%
         \begin{docdashadmonbox}{generic}{#2}%
     }{%

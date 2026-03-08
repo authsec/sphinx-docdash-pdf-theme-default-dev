@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.34"
+__version__ = "0.1.35"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -169,15 +169,22 @@ def config_inited(app, config):
             'title_font_color': '#FFFFFF',
             'title_font_size': r'\large\bfseries',
             'title_background_color': '#0092FA',
-            'title_icon_box_background_color': '#0092FA', # Matches titlebg by default
+            'title_icon_box_background_color': '#0092FA', 
             'content_background_color': '#F8F9FA',
+            'content_background_color_nested': '#FFFFFF', # Pure white canvas reset for nested blocks
             'content_font': '',
             'content_font_color': '#000000',
             'content_font_size': r'\normalsize'
         }
 
         admon_types = ['generic', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention']
-        admon_props = ['title_icon', 'title_icon_color', 'title_icon_size', 'title_icon_padding', 'title_decoration_spacing', 'title_font', 'title_font_color', 'title_font_size', 'title_background_color', 'title_icon_box_background_color', 'content_background_color', 'content_font', 'content_font_color', 'content_font_size']
+        admon_props = [
+            'title_icon', 'title_icon_color', 'title_icon_size', 'title_icon_padding', 'title_decoration_spacing', 
+            'title_font', 'title_font_color', 'title_font_size', 
+            'title_background_color', 'title_icon_box_background_color', 
+            'content_background_color', 'content_background_color_nested', 
+            'content_font', 'content_font_color', 'content_font_size'
+        ]
 
         for t in admon_types:
             for p in admon_props:
@@ -192,18 +199,15 @@ def config_inited(app, config):
                 
                 # Image Path Icon Detection
                 if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
-                    # 1. Ensure Sphinx copies the file to the LaTeX build directory
                     if val not in config.latex_additional_files:
                         config.latex_additional_files.append(val)
-                        
-                    # 2. LaTeX needs just the base filename, as Sphinx flattens the output dir
                     base_filename = os.path.basename(val)
                     val = f"\\includegraphics[height=1em, keepaspectratio]{{{base_filename}}}"
 
                 template_vars[f'docdash_admonition_{t}_{p}'] = val
                 
                 # Pre-calculate CMYK for colors
-                if p.endswith('_color'):
+                if p.endswith('_color') or p.endswith('_nested'):
                     template_vars[f'docdash_admonition_{t}_{p}_cmyk'] = hex_to_cmyk_string(val)
 
         template_vars['v'] = template_vars
@@ -320,7 +324,13 @@ def setup(app):
 
     # Admonition Customization Namespace
     admon_types = ['generic', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention']
-    admon_props = ['title_icon', 'title_icon_color', 'title_icon_size', 'title_icon_padding', 'title_decoration_spacing', 'title_font', 'title_font_color', 'title_font_size', 'title_background_color', 'title_icon_box_background_color', 'content_background_color', 'content_font', 'content_font_color', 'content_font_size']
+    admon_props = [
+        'title_icon', 'title_icon_color', 'title_icon_size', 'title_icon_padding', 'title_decoration_spacing', 
+        'title_font', 'title_font_color', 'title_font_size', 
+        'title_background_color', 'title_icon_box_background_color', 
+        'content_background_color', 'content_background_color_nested', 
+        'content_font', 'content_font_color', 'content_font_size'
+    ]
 
     for t in admon_types:
         for p in admon_props:
