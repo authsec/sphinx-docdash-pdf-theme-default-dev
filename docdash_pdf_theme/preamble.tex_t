@@ -14,9 +14,14 @@
 \makeatletter
 \let\orig@sphinxmaketitle\sphinxmaketitle
 \renewcommand{\sphinxmaketitle}{%
-  \pagecolor{titlepagecolor}% Apply color just before the title page
-  \orig@sphinxmaketitle% Render the title page
-  \nopagecolor% Clear the color immediately so it doesn't bleed to the TOC
+  \let\orig@titlepage\titlepage
+  \def\titlepage{%
+    \orig@titlepage
+    \pagecolor{titlepagecolor}%
+    %% Using modern LaTeX shipout hook to cleanly disable the color the exact moment Page 1 finishes!
+    \AddToHookNext{shipout/after}{\nopagecolor}%
+  }%
+  \orig@sphinxmaketitle
 }
 \makeatother
 <% endif %>
