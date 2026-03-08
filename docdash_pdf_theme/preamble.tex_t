@@ -208,6 +208,10 @@
 }
 \makeatother
 
+<% if docdash_numbers_in_margin %>
+%% ----------------------------------------------------
+%% NUMBERS IN MARGIN LOGIC (Default)
+%% ----------------------------------------------------
 \renewcommand*{\chapterformat}{%
   \Ifthispageodd{%
     % ODD: Line starts 1ex below baseline and goes 2cm above
@@ -265,6 +269,18 @@
   }%
 }%
 \makeatother
+
+<% else %>
+%% ----------------------------------------------------
+%% INLINE NUMBERS LOGIC (docdash_numbers_in_margin = False)
+%% ----------------------------------------------------
+\renewcommand*{\chapterformat}{\usekomafont{chapternumber}\thechapter\autodot\enskip}
+\renewcommand*{\sectionformat}{\usekomafont{sectionnumber}\thesection\autodot\enskip}
+\renewcommand*{\subsectionformat}{\usekomafont{subsectionnumber}\thesubsection\autodot\enskip}
+\renewcommand*{\subsubsectionformat}{\usekomafont{subsubsectionnumber}\thesubsubsection\autodot\enskip}
+<% endif %>
+
+
 %%% Style chapters
 
 % Map Sphinx's "normal" style to "scrheadings" to prevent crashes

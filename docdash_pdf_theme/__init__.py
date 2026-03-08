@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.19"
+__version__ = "0.1.20"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -85,6 +85,7 @@ def config_inited(app, config):
         template_vars = {
             'docdash_subtitle': getattr(config, 'docdash_subtitle', None),
             'docdash_show_release': getattr(config, 'docdash_show_release', True),
+            'docdash_numbers_in_margin': getattr(config, 'docdash_numbers_in_margin', True),
             'docdash_title_page_color': hex_to_cmyk_string(getattr(config, 'docdash_title_page_color', None)),
         }
         
@@ -176,7 +177,7 @@ def config_inited(app, config):
         if key not in config.latex_elements:
             config.latex_elements[key] = value
 
-    # ALWAYS append our preamble so the `normal` pagestyle fix isn't lost
+    # ALWAYS append our preamble so the `normal` pagestyle fix isnt lost
     if 'preamble' in config.latex_elements:
         config.latex_elements['preamble'] += f"\n{my_preamble}"
     else:
@@ -213,6 +214,7 @@ def setup(app):
     # Toggles & Text
     app.add_config_value('docdash_subtitle', None, 'env')
     app.add_config_value('docdash_show_release', True, 'env')
+    app.add_config_value('docdash_numbers_in_margin', True, 'env')
     
     # Inheritance Toggles
     app.add_config_value('docdash_inherit_all', True, 'env')
