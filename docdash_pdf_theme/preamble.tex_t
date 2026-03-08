@@ -28,6 +28,7 @@
 <% if docdash_rubric_color %>\definecolor{ddrubriccolor}{cmyk}{<< docdash_rubric_color >>}<% endif %>
 
 %% Define the Number Line / Structure Colors
+<% if docdash_part_number_color %>\definecolor{ddpartnumbercolor}{cmyk}{<< docdash_part_number_color >>}<% endif %>
 <% if docdash_chapter_number_color %>
 \definecolor{ddchapternumbercolor}{cmyk}{<< docdash_chapter_number_color >>}
 <% else %>
@@ -88,6 +89,11 @@
 <% endif %>
 
 %% Custom Elements for Structural Numbers
+%% The native KOMA element for the "Part X" line is `partnumber`
+<% if docdash_part_number_font or docdash_part_number_color or docdash_part_number_size %>
+\addtokomafont{partnumber}{<% if docdash_part_number_color %>\color{ddpartnumbercolor}<% endif %><% if docdash_part_number_size %><< docdash_part_number_size >><% endif %><% if docdash_part_number_font %>\fontspec{<< docdash_part_number_font >>}<% endif %>}
+<% endif %>
+
 \newkomafont{chapternumber}{}
 <% if docdash_chapter_number_font or docdash_chapter_number_color or docdash_chapter_number_size %>
 \addtokomafont{chapternumber}{<% if docdash_chapter_number_color %>\color{ddchapternumbercolor}<% endif %><% if docdash_chapter_number_size %><< docdash_chapter_number_size >><% endif %><% if docdash_chapter_number_font %>\fontspec{<< docdash_chapter_number_font >>}<% endif %>}

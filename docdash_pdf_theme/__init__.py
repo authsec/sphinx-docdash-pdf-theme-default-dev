@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.11"
+__version__ = "0.1.12"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -92,7 +92,7 @@ def config_inited(app, config):
         elements = [
             'title', 'subtitle', 'author', 'date', 'release_version', 
             'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
-            'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
+            'part_number', 'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
         ]
         
         for el in elements:
@@ -104,8 +104,8 @@ def config_inited(app, config):
         # Resolve inheritance cascading top-down before passing to Jinja template
         if getattr(config, 'docdash_inherit_all', True):
             hierarchies = [
-                ['chapter', 'section', 'subsection', 'subsubsection'],
-                ['chapter_number', 'section_number', 'subsection_number', 'subsubsection_number']
+                ['part', 'chapter', 'section', 'subsection', 'subsubsection'],
+                ['part_number', 'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number']
             ]
             properties = [
                 ('font', getattr(config, 'docdash_inherit_font', True)),
@@ -116,7 +116,7 @@ def config_inited(app, config):
             for hierarchy in hierarchies:
                 for prop, is_enabled in properties:
                     if is_enabled:
-                        # Grab the highest level value (e.g., chapter_font)
+                        # Grab the highest level value (e.g., part_font)
                         current_val = template_vars[f'docdash_{hierarchy[0]}_{prop}']
                         
                         # Loop down the hierarchy
@@ -228,7 +228,7 @@ def setup(app):
     elements = [
         'title_page', 'title', 'subtitle', 'author', 'date', 'release_version', 
         'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
-        'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
+        'part_number', 'chapter_number', 'chapter_line', 'section_number', 'subsection_number', 'subsubsection_number'
     ]
 
     for el in elements:
