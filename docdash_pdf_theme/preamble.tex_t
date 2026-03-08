@@ -50,6 +50,12 @@
 \definecolor{ddchapternumbercolor}{cmyk}{0, 0, 0, 1}
 <% endif %>
 
+<% if docdash_chapter_line_color %>
+\definecolor{ddchapterlinecolor}{cmyk}{<< docdash_chapter_line_color >>}
+<% else %>
+\colorlet{ddchapterlinecolor}{ddchapternumbercolor!45}
+<% endif %>
+
 <% if docdash_section_number_color %>\definecolor{ddsectionnumbercolor}{cmyk}{<< docdash_section_number_color >>}<% endif %>
 <% if docdash_subsection_number_color %>\definecolor{ddsubsectionnumbercolor}{cmyk}{<< docdash_subsection_number_color >>}<% endif %>
 <% if docdash_subsubsection_number_color %>\definecolor{ddsubsubsectionnumbercolor}{cmyk}{<< docdash_subsubsection_number_color >>}<% endif %>
@@ -264,7 +270,7 @@
 
   \def\docdash@<< el >>@align@right#1#2#3#4{%
   <% if v['docdash_' ~ el ~ '_number_margin'] %>
-    \raggedleft#4\makebox[0pt][l]{\hspace{\marginparsep}<% if v['docdash_' ~ el ~ '_number_line'] %>\docdash@drawline{dd<< el >>linecolor}{<< v['docdash_' ~ el ~ '_line_height'] >>}<% endif %>#3}%
+    \raggedleft#4\makebox[0pt][l]{<% if v['docdash_' ~ el ~ '_number_line'] %>\docdash@drawline{dd<< el >>linecolor}{<< v['docdash_' ~ el ~ '_line_height'] >>}<% endif %>\hspace{\marginparsep}#3}%
   <% else %>
     \raggedleft #3\enskip#4%
   <% endif %>
@@ -272,7 +278,7 @@
   
   \def\docdash@<< el >>@align@left#1#2#3#4{%
   <% if v['docdash_' ~ el ~ '_number_margin'] %>
-    \raggedright\makebox[0pt][r]{#3<% if v['docdash_' ~ el ~ '_number_line'] %>\docdash@drawline{dd<< el >>linecolor}{<< v['docdash_' ~ el ~ '_line_height'] >>}<% endif %>\hspace{\marginparsep}}#4%
+    \raggedright\makebox[0pt][r]{#3\hspace{\marginparsep}<% if v['docdash_' ~ el ~ '_number_line'] %>\docdash@drawline{dd<< el >>linecolor}{<< v['docdash_' ~ el ~ '_line_height'] >>}<% endif %>}#4%
   <% else %>
     \raggedright #3\enskip#4%
   <% endif %>
