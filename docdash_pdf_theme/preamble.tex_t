@@ -270,7 +270,9 @@
 
   \def\docdash@<< el >>@align@right#1#2#3#4{%
   <% if v['docdash_' ~ el ~ '_number_margin'] %>
-    \raggedleft#4\makebox[0pt][l]{<% if v['docdash_' ~ el ~ '_number_line'] %>\docdash@drawline{dd<< el >>linecolor}{<< v['docdash_' ~ el ~ '_line_height'] >>}<% endif %>\hspace{\marginparsep}#3}%
+    \hfill\parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedleft\usekomafont{#1}#4}%
+    \hspace{1.5em}%
+    \makebox[0pt][l]{<% if v['docdash_' ~ el ~ '_number_line'] %>\docdash@drawline{dd<< el >>linecolor}{<< v['docdash_' ~ el ~ '_line_height'] >>}<% endif %>\hspace{\marginparsep}#3}%
   <% else %>
     \raggedleft #3\enskip#4%
   <% endif %>
@@ -278,7 +280,9 @@
   
   \def\docdash@<< el >>@align@left#1#2#3#4{%
   <% if v['docdash_' ~ el ~ '_number_margin'] %>
-    \raggedright\makebox[0pt][r]{#3\hspace{\marginparsep}<% if v['docdash_' ~ el ~ '_number_line'] %>\docdash@drawline{dd<< el >>linecolor}{<< v['docdash_' ~ el ~ '_line_height'] >>}<% endif %>}#4%
+    \makebox[0pt][r]{#3\hspace{\marginparsep}<% if v['docdash_' ~ el ~ '_number_line'] %>\docdash@drawline{dd<< el >>linecolor}{<< v['docdash_' ~ el ~ '_line_height'] >>}<% endif %>}%
+    \hspace{1.5em}%
+    \parbox[b]{\dimexpr\textwidth-2em\relax}{\raggedright\usekomafont{#1}#4}\hfill%
   <% else %>
     \raggedright #3\enskip#4%
   <% endif %>
