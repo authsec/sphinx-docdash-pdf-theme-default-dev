@@ -7,7 +7,7 @@
 \pagestyle{scrheadings}
 
 %%% Style chapters
-%% Define colors
+%% Define core colors
 \definecolor{titlepagecolor}{cmyk}{<< titlepagecolor >>}
 \definecolor{colorchapternumber}{cmyk}{<< colorchapternumber >>}
 \definecolor{colorsectionnumber}{cmyk}{<< colorsectionnumber >>}
@@ -17,6 +17,69 @@
 <% else %>
 \colorlet{colorchapterline}{colorchapternumber!45}
 <% endif %>
+
+%% Define Universal Element Colors
+<% if docdash_title_color %>\definecolor{ddtitlecolor}{cmyk}{<< docdash_title_color >>}<% endif %>
+<% if docdash_subtitle_color %>\definecolor{ddsubtitlecolor}{cmyk}{<< docdash_subtitle_color >>}<% endif %>
+<% if docdash_author_color %>\definecolor{ddauthorcolor}{cmyk}{<< docdash_author_color >>}<% endif %>
+<% if docdash_date_color %>\definecolor{dddatecolor}{cmyk}{<< docdash_date_color >>}<% endif %>
+<% if docdash_part_color %>\definecolor{ddpartcolor}{cmyk}{<< docdash_part_color >>}<% endif %>
+<% if docdash_chapter_color %>\definecolor{ddchaptercolor}{cmyk}{<< docdash_chapter_color >>}<% endif %>
+<% if docdash_section_color %>\definecolor{ddsectioncolor}{cmyk}{<< docdash_section_color >>}<% endif %>
+<% if docdash_subsection_color %>\definecolor{ddsubsectioncolor}{cmyk}{<< docdash_subsection_color >>}<% endif %>
+<% if docdash_subsubsection_color %>\definecolor{ddsubsubsectioncolor}{cmyk}{<< docdash_subsubsection_color >>}<% endif %>
+<% if docdash_rubric_color %>\definecolor{ddrubriccolor}{cmyk}{<< docdash_rubric_color >>}<% endif %>
+
+%% Apply Universal Fonts and Colors to KOMA-Script Elements
+<% if docdash_title_font or docdash_title_color %>
+\addtokomafont{title}{<% if docdash_title_color %>\color{ddtitlecolor}<% endif %><% if docdash_title_font %>\fontspec{<< docdash_title_font >>}<% endif %>}
+<% endif %>
+
+<% if docdash_subtitle_font or docdash_subtitle_color %>
+\addtokomafont{subtitle}{<% if docdash_subtitle_color %>\color{ddsubtitlecolor}<% endif %><% if docdash_subtitle_font %>\fontspec{<< docdash_subtitle_font >>}<% endif %>}
+<% endif %>
+
+<% if docdash_author_font or docdash_author_color %>
+\addtokomafont{author}{<% if docdash_author_color %>\color{ddauthorcolor}<% endif %><% if docdash_author_font %>\fontspec{<< docdash_author_font >>}<% endif %>}
+<% endif %>
+
+<% if docdash_date_font or docdash_date_color %>
+\addtokomafont{date}{<% if docdash_date_color %>\color{dddatecolor}<% endif %><% if docdash_date_font %>\fontspec{<< docdash_date_font >>}<% endif %>}
+<% endif %>
+
+<% if docdash_part_font or docdash_part_color %>
+\addtokomafont{part}{<% if docdash_part_color %>\color{ddpartcolor}<% endif %><% if docdash_part_font %>\fontspec{<< docdash_part_font >>}<% endif %>}
+<% endif %>
+
+<% if docdash_chapter_font or docdash_chapter_color %>
+\addtokomafont{chapter}{<% if docdash_chapter_color %>\color{ddchaptercolor}<% endif %><% if docdash_chapter_font %>\fontspec{<< docdash_chapter_font >>}<% endif %>}
+<% endif %>
+
+<% if docdash_section_font or docdash_section_color %>
+\addtokomafont{section}{<% if docdash_section_color %>\color{ddsectioncolor}<% endif %><% if docdash_section_font %>\fontspec{<< docdash_section_font >>}<% endif %>}
+<% endif %>
+
+<% if docdash_subsection_font or docdash_subsection_color %>
+\addtokomafont{subsection}{<% if docdash_subsection_color %>\color{ddsubsectioncolor}<% endif %><% if docdash_subsection_font %>\fontspec{<< docdash_subsection_font >>}<% endif %>}
+<% endif %>
+
+<% if docdash_subsubsection_font or docdash_subsubsection_color %>
+\addtokomafont{subsubsection}{<% if docdash_subsubsection_color %>\color{ddsubsubsectioncolor}<% endif %><% if docdash_subsubsection_font %>\fontspec{<< docdash_subsubsection_font >>}<% endif %>}
+<% endif %>
+
+%% Redefine Sphinx Rubric mapping to inject custom styling
+<% if docdash_rubric_font or docdash_rubric_color %>
+\makeatletter
+\renewcommand{\sphinxrubric}[1]{%
+  \subsubsection*{%
+    <% if docdash_rubric_color %>\color{ddrubriccolor}<% endif %>%
+    <% if docdash_rubric_font %>\fontspec{<< docdash_rubric_font >>}<% endif %>%
+    #1%
+  }%
+}
+\makeatother
+<% endif %>
+
 
 \renewcommand*{\chapterformat}{%
   \Ifthispageodd{%
@@ -95,35 +158,3 @@
   \textsf{\textit{\my@menu@split#1‣\@nil}}%
 }
 \makeatother
-
-%%%% --------------------------------------------------
-%%%% |:sec:| 'correctly' add list of figures, list of tables, list of code blocks to TOC
-%%%% --------------------------------------------------
-%%\makeatletter
-%%\renewcommand{\sphinxtableofcontents}{%
-%%  %
-%%  % before resetting page counter, let's do the right thing.
-%%  \if@openright\cleardoublepage\else\clearpage\fi
-%%  \pagenumbering{roman}%
-%%  \begingroup
-%%    \parskip \z@skip
-%%    \tableofcontents
-%%  \endgroup
-%%  %
-%%  %% addtional lists
-%%  \if@openright\cleardoublepage\else\clearpage\fi
-%%  \addcontentsline{toc}{chapter}{List of Figures}%
-%%  \listoffigures
-%%  %
-%%  \if@openright\cleardoublepage\else\clearpage\fi
-%%  \addcontentsline{toc}{chapter}{List of Tables}%
-%%  \listoftables
-%%  %
-%%  \if@openright\cleardoublepage\else\clearpage\fi
-%%  \addcontentsline{toc}{chapter}{List of Code Blocks}%
-%%  \listof{literalblock}{List of Code Blocks}%
-%%  %
-%%  \if@openright\cleardoublepage\else\clearpage\fi
-%%  \pagenumbering{arabic}%
-%%}
-%%\makeatother
