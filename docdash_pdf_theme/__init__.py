@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.33"
+__version__ = "0.1.34"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -169,7 +169,7 @@ def config_inited(app, config):
             'title_font_color': '#FFFFFF',
             'title_font_size': r'\large\bfseries',
             'title_background_color': '#0092FA',
-            'title_icon_box_background_color': '#0092FA',
+            'title_icon_box_background_color': '#0092FA', # Matches titlebg by default
             'content_background_color': '#F8F9FA',
             'content_font': '',
             'content_font_color': '#000000',
@@ -192,8 +192,13 @@ def config_inited(app, config):
                 
                 # Image Path Icon Detection
                 if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
-                    # Removed \vcenter and \hbox; TikZ automatically centers \includegraphics vertically in nodes!
-                    val = f"\\includegraphics[height=1em, keepaspectratio]{{{val}}}"
+                    # 1. Ensure Sphinx copies the file to the LaTeX build directory
+                    if val not in config.latex_additional_files:
+                        config.latex_additional_files.append(val)
+                        
+                    # 2. LaTeX needs just the base filename, as Sphinx flattens the output dir
+                    base_filename = os.path.basename(val)
+                    val = f"\\includegraphics[height=1em, keepaspectratio]{{{base_filename}}}"
 
                 template_vars[f'docdash_admonition_{t}_{p}'] = val
                 
