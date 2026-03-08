@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -98,6 +98,8 @@ def config_inited(app, config):
             'docdash_author_color': hex_to_cmyk_string(config.docdash_author_color),
             'docdash_date_font': config.docdash_date_font,
             'docdash_date_color': hex_to_cmyk_string(config.docdash_date_color),
+            'docdash_release_version_font': config.docdash_release_version_font,
+            'docdash_release_version_color': hex_to_cmyk_string(config.docdash_release_version_color),
             'docdash_part_font': config.docdash_part_font,
             'docdash_part_color': hex_to_cmyk_string(config.docdash_part_color),
             'docdash_chapter_font': config.docdash_chapter_font,
@@ -195,7 +197,10 @@ def setup(app):
     app.add_config_value('docdash_mono_font', 'IosevkaTerm NF', 'env')
 
     # Universal Element Customization Namespace
-    elements = ['title', 'subtitle', 'author', 'date', 'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric']
+    elements = [
+        'title', 'subtitle', 'author', 'date', 'release_version', 
+        'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric'
+    ]
     for el in elements:
         app.add_config_value(f'docdash_{el}_font', None, 'env')
         app.add_config_value(f'docdash_{el}_color', None, 'env')

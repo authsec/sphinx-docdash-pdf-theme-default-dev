@@ -23,6 +23,7 @@
 <% if docdash_subtitle_color %>\definecolor{ddsubtitlecolor}{cmyk}{<< docdash_subtitle_color >>}<% endif %>
 <% if docdash_author_color %>\definecolor{ddauthorcolor}{cmyk}{<< docdash_author_color >>}<% endif %>
 <% if docdash_date_color %>\definecolor{dddatecolor}{cmyk}{<< docdash_date_color >>}<% endif %>
+<% if docdash_release_version_color %>\definecolor{ddreleaseversioncolor}{cmyk}{<< docdash_release_version_color >>}<% endif %>
 <% if docdash_part_color %>\definecolor{ddpartcolor}{cmyk}{<< docdash_part_color >>}<% endif %>
 <% if docdash_chapter_color %>\definecolor{ddchaptercolor}{cmyk}{<< docdash_chapter_color >>}<% endif %>
 <% if docdash_section_color %>\definecolor{ddsectioncolor}{cmyk}{<< docdash_section_color >>}<% endif %>
@@ -45,6 +46,12 @@
 
 <% if docdash_date_font or docdash_date_color %>
 \addtokomafont{date}{<% if docdash_date_color %>\color{dddatecolor}<% endif %><% if docdash_date_font %>\fontspec{<< docdash_date_font >>}<% endif %>}
+<% endif %>
+
+%% Custom element for Release Version
+\newkomafont{releaseversion}{}
+<% if docdash_release_version_font or docdash_release_version_color %>
+\addtokomafont{releaseversion}{<% if docdash_release_version_color %>\color{ddreleaseversioncolor}<% endif %><% if docdash_release_version_font %>\fontspec{<< docdash_release_version_font >>}<% endif %>}
 <% endif %>
 
 <% if docdash_part_font or docdash_part_color %>
@@ -91,9 +98,10 @@
 \let\orig@date\date
 \renewcommand{\date}[1]{\orig@date{\texorpdfstring{\usekomafont{date}#1}{#1}}}
 
-% Sphinx's "release" macro acts as the subtitle on the title page
+% Sphinx's "release" macro prints the version on the title page. 
+% We now use our dedicated custom komafont for it!
 \let\orig@release\release
-\renewcommand{\release}[1]{\orig@release{\texorpdfstring{\usekomafont{subtitle}#1}{#1}}}
+\renewcommand{\release}[1]{\orig@release{\texorpdfstring{\usekomafont{releaseversion}#1}{#1}}}
 \makeatother
 
 
