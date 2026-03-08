@@ -99,10 +99,17 @@
 \let\orig@date\date
 \renewcommand{\date}[1]{\orig@date{\texorpdfstring{\usekomafont{date}#1}{#1}}}
 
-% Sphinx's "release" macro prints the version on the title page. 
-% We now use our dedicated custom komafont for it!
+% Sphinx splits the release line into two macros: \releasename ("Release") and \version ("0.0.1").
+% We apply the komafont to both so the entire line matches.
 \let\orig@release\release
 \renewcommand{\release}[1]{\orig@release{\texorpdfstring{\usekomafont{releaseversion}#1}{#1}}}
+
+\AtBeginDocument{
+  \@ifundefined{releasename}{}{%
+    \let\orig@releasename\releasename
+    \renewcommand{\releasename}{\texorpdfstring{\usekomafont{releaseversion}\orig@releasename}{\orig@releasename}}
+  }
+}
 \makeatother
 
 
