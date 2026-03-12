@@ -433,32 +433,31 @@
             \coordinate (I_NE) at ([yshift=-.5\pgflinewidth]icon_box_end |- title.north);
 
             % 1. DRAW Main Title Text Background (Top-Left Rounded)
-            % Added yshift=-0.5pt to the south edges to overlap the content box slightly and seal the PDF hairline gap
             \fill[fill=ddadmon@#1@titlebg] 
-                ([yshift=-0.5pt]text_box_end |- title.south) -- 
-                ([yshift=-0.5pt]title.south west) [rounded corners=1mm] -- 
+                (text_box_end |- title.south) -- 
+                (title.south west) [rounded corners=1mm] -- 
                 (T_NW) [sharp corners] -- 
                 (T_NE) -- 
                 cycle;
             \draw[ddadmon@#1@titlebg, line width=0.4pt] 
-                ([yshift=-0.5pt]text_box_end |- title.south) -- 
-                ([yshift=-0.5pt]title.south west) [rounded corners=1mm] -- 
+                (text_box_end |- title.south) -- 
+                (title.south west) [rounded corners=1mm] -- 
                 (T_NW) [sharp corners] -- 
                 (T_NE) -- 
                 cycle;
 
             % 2. DRAW Icon Box Background (Top-Right Rounded)
             \fill[fill=ddadmon@#1@iconboxbg] 
-                ([yshift=-0.5pt]icon_box_start |- title.south) -- 
+                (icon_box_start |- title.south) -- 
                 (I_NW) [rounded corners=1mm] -- 
                 (I_NE) [sharp corners] -- 
-                ([yshift=-0.5pt]icon_box_end |- title.south) -- 
+                (icon_box_end |- title.south) -- 
                 cycle;
             \draw[ddadmon@#1@titlebg, line width=0.4pt] 
-                ([yshift=-0.5pt]icon_box_start |- title.south) -- 
+                (icon_box_start |- title.south) -- 
                 (I_NW) [rounded corners=1mm] -- 
                 (I_NE) [sharp corners] -- 
-                ([yshift=-0.5pt]icon_box_end |- title.south) -- 
+                (icon_box_end |- title.south) -- 
                 cycle;
 
             \path(dddeco_center) node[inner sep=0pt] (ddicon) {{\csname ddadmon@#1@iconsize\endcsname\color{ddadmon@#1@iconfg}\csname ddadmon@#1@icon\endcsname}};
@@ -469,7 +468,7 @@
                 \draw[line width=.5mm, ddadmon@#1@titlebg, opacity=\op]
                 ([xshift=\i mm]dddeco |- title.north) --
                 ([xshift=\ni mm]dddeco |- title.east) --
-                ([xshift=\i mm, yshift=-0.5pt]dddeco |- title.south);
+                ([xshift=\i mm]dddeco |- title.south);
             }
         },
         frame hidden,
