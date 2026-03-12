@@ -344,7 +344,7 @@
 %% ----------------------------------------------------
 
 %% 1. Register generated colors and fonts
-<% for t in ['generic', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention'] %>
+<% for t in ['generic', 'admonition', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention'] %>
   \definecolor{ddadmon@<< t >>@titlebg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_title_background_color_cmyk'] >>}
   \definecolor{ddadmon@<< t >>@iconboxbg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_title_icon_box_background_color_cmyk'] >>}
   \definecolor{ddadmon@<< t >>@contentbg}{cmyk}{<< v['docdash_admonition_' ~ t ~ '_content_background_color_cmyk'] >>}
