@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.39"
+__version__ = "0.1.40"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -172,7 +172,7 @@ def config_inited(app, config):
             'title_background_color': '#0092FA',
             'title_icon_box_background_color': '#0092FA', 
             'content_background_color': '#F8F9FA',
-            'content_background_color_nested': '#FFFFFF',
+            'content_background_color_nested': '#FFFFFF', 
             'content_font': '',
             'content_font_color': '#000000',
             'content_font_size': r'\normalsize'
@@ -286,10 +286,11 @@ def setup(app):
     # By default, Sphinx's LaTeX writer forcefully converts generic `.. admonition::` directives 
     # to use the "note" environment. We intercept this so our theme can style it independently!
     _orig_visit_admonition = LaTeXTranslator.visit_admonition
-    def _custom_visit_admonition(self, node, name=''):
-        if not name:
-            name = 'admonition'
-        _orig_visit_admonition(self, node, name)
+    def _custom_visit_admonition(self, node):
+        _orig_visit_admonition(self, node)
+        # Safely replace the hardcoded {note} with {admonition} right after Sphinx appends it
+        if self.body and '{note}' in self.body[-1]:
+            self.body[-1] = self.body[-1].replace('{note}', '{admonition}')
     LaTeXTranslator.visit_admonition = _custom_visit_admonition
     # ---------------------------------
 
