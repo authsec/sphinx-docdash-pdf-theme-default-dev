@@ -385,11 +385,39 @@
             \coordinate (icon_box_end) at ([xshift=\csname ddadmon@#1@iconpad\endcsname]icon_box_start);
             \coordinate (dddeco_center) at ($ (icon_box_start)!.5!(icon_box_end) $); 
 
-            \fill[fill=ddadmon@#1@titlebg](title.south west)--(title.north west)--(text_box_end |- title.north)--(text_box_end |- title.south)--cycle;
-            \draw[ddadmon@#1@titlebg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]title.north west) -| (text_box_end) [sharp corners]|- (title.south west); 
+            % Shift top border down to align with tcolorbox frame
+            \coordinate (T_NW) at ([yshift=-.5\pgflinewidth]title.north west);
+            \coordinate (T_NE) at ([yshift=-.5\pgflinewidth]text_box_end |- title.north);
+            \coordinate (I_NW) at ([yshift=-.5\pgflinewidth]icon_box_start |- title.north);
+            \coordinate (I_NE) at ([yshift=-.5\pgflinewidth]icon_box_end |- title.north);
 
-            \fill[fill=ddadmon@#1@iconboxbg](icon_box_start |- title.south)--(icon_box_start |- title.north)--(icon_box_end |- title.north)--(icon_box_end |- title.south)--cycle;
-            \draw[ddadmon@#1@titlebg, rounded corners=1mm] ([yshift=-.5\pgflinewidth]icon_box_start |- title.north) -| (icon_box_end) [sharp corners]|- (icon_box_start |- title.south); 
+            % 1. DRAW Main Title Text Background (Top-Left Rounded)
+            \fill[fill=ddadmon@#1@titlebg] 
+                (text_box_end |- title.south) -- 
+                (title.south west) [rounded corners=1mm] -- 
+                (T_NW) [sharp corners] -- 
+                (T_NE) -- 
+                cycle;
+            \draw[ddadmon@#1@titlebg] 
+                (text_box_end |- title.south) -- 
+                (title.south west) [rounded corners=1mm] -- 
+                (T_NW) [sharp corners] -- 
+                (T_NE) -- 
+                cycle;
+
+            % 2. DRAW Icon Box Background (Top-Right Rounded)
+            \fill[fill=ddadmon@#1@iconboxbg] 
+                (icon_box_start |- title.south) -- 
+                (I_NW) [rounded corners=1mm] -- 
+                (I_NE) [sharp corners] -- 
+                (icon_box_end |- title.south) -- 
+                cycle;
+            \draw[ddadmon@#1@titlebg] 
+                (icon_box_start |- title.south) -- 
+                (I_NW) [rounded corners=1mm] -- 
+                (I_NE) [sharp corners] -- 
+                (icon_box_end |- title.south) -- 
+                cycle;
 
             \path(dddeco_center) node[inner sep=0pt] (ddicon) {{\csname ddadmon@#1@iconsize\endcsname\color{ddadmon@#1@iconfg}\csname ddadmon@#1@icon\endcsname}};
 
