@@ -404,7 +404,7 @@
         sharp corners,
         % xshift aligns the 0.4pt stroke exactly over the 1.5pt body stroke
         % yshift pushes the title box down by exactly half the 0.4pt stroke to make it flush
-        attach boxed title to top left={xshift=0.2pt, yshift=-0.2pt},
+        attach boxed title to top left={xshift=0.2pt, yshift=0.2pt},
         fonttitle=\csname ddadmon@#1@titlefont\endcsname,
         coltitle=ddadmon@#1@titlefg,
         colback=ddadmon@#1@contentbg,
