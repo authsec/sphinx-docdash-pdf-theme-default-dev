@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.44"
+__version__ = "0.1.45"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -87,6 +87,10 @@ def config_inited(app, config):
             'docdash_subtitle': getattr(config, 'docdash_subtitle', None),
             'docdash_show_release': getattr(config, 'docdash_show_release', True),
             'docdash_title_page_color': hex_to_cmyk_string(getattr(config, 'docdash_title_page_color', None)),
+            'docdash_headsep': getattr(config, 'docdash_headsep', None),
+            'docdash_footskip': getattr(config, 'docdash_footskip', None),
+            'docdash_headheight': getattr(config, 'docdash_headheight', None),
+            'docdash_footheight': getattr(config, 'docdash_footheight', None),
         }
 
         # Footer Logo Resolution
@@ -327,6 +331,10 @@ def setup(app):
     # General Theme Settings
     app.add_config_value('docdash_footer_logo', None, 'env')
     app.add_config_value('docdash_footer_logo_height', '1.5em', 'env')
+    app.add_config_value('docdash_headsep', None, 'env')
+    app.add_config_value('docdash_footskip', None, 'env')
+    app.add_config_value('docdash_headheight', None, 'env')
+    app.add_config_value('docdash_footheight', None, 'env')
 
     # Toggles & Text
     app.add_config_value('docdash_subtitle', None, 'env')

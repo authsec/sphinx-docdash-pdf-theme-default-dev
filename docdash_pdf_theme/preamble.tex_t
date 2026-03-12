@@ -5,6 +5,15 @@
 \usetikzlibrary{calc}
 \usepackage{tcolorbox}
 \tcbuselibrary{skins, hooks, breakable}
+
+%% Document Geometry and Header/Footer Heights
+<% if docdash_headsep or docdash_footskip %>
+\geometry{<% if docdash_headsep %>headsep=<< docdash_headsep >><% endif %><% if docdash_headsep and docdash_footskip %>, <% endif %><% if docdash_footskip %>footskip=<< docdash_footskip >><% endif %>}
+<% endif %>
+<% if docdash_headheight or docdash_footheight %>
+\KOMAoptions{<% if docdash_headheight %>headheight=<< docdash_headheight >><% endif %><% if docdash_headheight and docdash_footheight %>, <% endif %><% if docdash_footheight %>footheight=<< docdash_footheight >><% endif %>}
+<% endif %>
+
 \clearpairofpagestyles
 \ohead{\headmark}
 %% Starred commands mirror each other perfectly on both plain and scrheadings styles
