@@ -3,10 +3,11 @@ import re
 from pathlib import Path
 from sphinx.util import logging
 from jinja2 import Environment
+from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.38"
+__version__ = "0.1.39"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -281,6 +282,17 @@ def build_finished(app, exception):
     xmp_path.write_text(xmp_content, encoding='utf-8')
 
 def setup(app):
+    # --- SPHINX LATEX WRITER PATCH ---
+    # By default, Sphinx's LaTeX writer forcefully converts generic `.. admonition::` directives 
+    # to use the "note" environment. We intercept this so our theme can style it independently!
+    _orig_visit_admonition = LaTeXTranslator.visit_admonition
+    def _custom_visit_admonition(self, node, name=''):
+        if not name:
+            name = 'admonition'
+        _orig_visit_admonition(self, node, name)
+    LaTeXTranslator.visit_admonition = _custom_visit_admonition
+    # ---------------------------------
+
     # Toggles & Text
     app.add_config_value('docdash_subtitle', None, 'env')
     app.add_config_value('docdash_show_release', True, 'env')
