@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.43"
+__version__ = "0.1.44"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -247,7 +247,6 @@ def config_inited(app, config):
     default_elements = {
         'fncychap': '',
         'tableofcontents': '\\tableofcontents',
-        'sphinxsetup': 'hmargin={1.5cm,2.5cm}, vmargin={2cm,2cm}, marginpar=2.5cm',
         'papersize': 'a4paper',
         'pointsize': '11pt',
         'extraclassoptions': 'openright,twoside,parskip=half,numbers=noenddot',
@@ -259,7 +258,27 @@ def config_inited(app, config):
         if key not in config.latex_elements:
             config.latex_elements[key] = value
 
-    # ALWAYS append our preamble so the `normal` pagestyle fix isnt lost
+    # --- SMART SPHINXSETUP MERGING ---
+    user_sphinxsetup = config.latex_elements.get('sphinxsetup', '')
+    setup_defaults = [
+        ('hmargin', 'hmargin={1.5cm,2.5cm}'),
+        ('vmargin', 'vmargin={2cm,2cm}'),
+        ('marginpar', 'marginpar=2.5cm')
+    ]
+    
+    missing_setups = []
+    for key, default_val in setup_defaults:
+        if key not in user_sphinxsetup:
+            missing_setups.append(default_val)
+            
+    if missing_setups:
+        if user_sphinxsetup:
+            config.latex_elements['sphinxsetup'] = user_sphinxsetup.rstrip(', ') + ', ' + ', '.join(missing_setups)
+        else:
+            config.latex_elements['sphinxsetup'] = ', '.join(missing_setups)
+    # ---------------------------------
+
+    # ALWAYS append our preamble so the `normal` pagestyle fix isn't lost
     if 'preamble' in config.latex_elements:
         config.latex_elements['preamble'] += f"\n{my_preamble}"
     else:
