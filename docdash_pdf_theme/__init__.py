@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.47"
+__version__ = "0.1.48"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -93,6 +93,22 @@ def config_inited(app, config):
             'docdash_headheight': getattr(config, 'docdash_headheight', '18pt'),
             'docdash_footheight': getattr(config, 'docdash_footheight', '25pt'),
         }
+
+        # Title Page Background Image Resolution
+        title_bg = getattr(config, 'docdash_title_page_background_image', None)
+        if title_bg and isinstance(title_bg, str):
+            if title_bg not in config.latex_additional_files:
+                config.latex_additional_files.append(title_bg)
+            template_vars['docdash_title_page_background_image'] = os.path.basename(title_bg)
+        else:
+            template_vars['docdash_title_page_background_image'] = None
+
+        # Title Page Tint Opacity
+        opacity = getattr(config, 'docdash_title_page_color_opacity', None)
+        if opacity is None:
+            # Default to 50% opacity if there is an image, otherwise fully opaque
+            opacity = '0.5' if template_vars['docdash_title_page_background_image'] else '1.0'
+        template_vars['docdash_title_page_color_opacity'] = opacity
 
         # Footer Logo Resolution
         footer_logo = getattr(config, 'docdash_footer_logo', None)
@@ -331,6 +347,8 @@ def setup(app):
 
     # General Theme Settings
     app.add_config_value('docdash_title_page_top_line', False, 'env')
+    app.add_config_value('docdash_title_page_background_image', None, 'env')
+    app.add_config_value('docdash_title_page_color_opacity', None, 'env')
     app.add_config_value('docdash_footer_logo', None, 'env')
     app.add_config_value('docdash_footer_logo_height', '1.5em', 'env')
     app.add_config_value('docdash_headsep', '8mm', 'env')
