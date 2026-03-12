@@ -402,7 +402,7 @@
     docdashadmonitionstyle/.style={
         enhanced, breakable,
         sharp corners,
-        attach boxed title to top left={xshift=0.25pt},
+        attach boxed title to top left, % Perfectly aligned, no xshift needed
         fonttitle=\csname ddadmon@#1@titlefont\endcsname,
         coltitle=ddadmon@#1@titlefg,
         colback=ddadmon@#1@contentbg,
@@ -410,52 +410,35 @@
         code={\ifodd\value{tcblayer}\else \tcbset{colback=ddadmon@#1@contentbgnested}\fi},
         coltext=ddadmon@#1@contentfg,
         fontupper=\csname ddadmon@#1@contentfont\endcsname,
-        boxrule=0pt,
+        frame hidden, % Crucial: Hides native frame to prevent hairlines
+        boxrule=0pt, % Keeps the interior calculation pristine
         leftrule=1.5pt,
         bottomrule=1.5pt,
-        colframe=ddadmon@#1@titlebg,
         boxed title style={
             empty, left=1ex, right=0pt
         },
         underlay boxed title={
             \coordinate (text_box_end) at ([xshift=1ex]title.east); 
-
             \coordinate (icon_box_start) at (text_box_end);
             \coordinate (icon_box_end) at ([xshift=\csname ddadmon@#1@iconpad\endcsname]icon_box_start);
             \coordinate (dddeco_center) at ($ (icon_box_start)!.5!(icon_box_end) $); 
 
-            % Shift top border down to align mathematically with the stroke widths
-            \coordinate (T_NW) at ([yshift=-0.25pt]title.north west);
-            \coordinate (T_NE) at ([yshift=-0.25pt]text_box_end |- title.north);
-            \coordinate (I_NW) at ([yshift=-0.25pt]icon_box_start |- title.north);
-            \coordinate (I_NE) at ([yshift=-0.25pt]icon_box_end |- title.north);
-
             % 1. DRAW Main Title Text Background (Top-Left Rounded)
+            % pure fill avoids stroke bleed. Shifted down 0.5pt to cover antialiasing gaps
             \fill[fill=ddadmon@#1@titlebg] 
-                (text_box_end |- title.south) -- 
-                (title.south west) [rounded corners=1mm] -- 
-                (T_NW) [sharp corners] -- 
-                (T_NE) -- 
-                cycle;
-            \draw[ddadmon@#1@titlebg, line width=0.5pt] 
-                (text_box_end |- title.south) -- 
-                (title.south west) [rounded corners=1mm] -- 
-                (T_NW) [sharp corners] -- 
-                (T_NE) -- 
+                ([yshift=-0.5pt]text_box_end |- title.south) -- 
+                ([yshift=-0.5pt]title.south west) [rounded corners=1mm] -- 
+                (title.north west) [sharp corners] -- 
+                (text_box_end |- title.north) -- 
                 cycle;
 
             % 2. DRAW Icon Box Background (Top-Right Rounded)
+            % Overlaps text box by 0.5pt left, and content box by 0.5pt down
             \fill[fill=ddadmon@#1@iconboxbg] 
-                (icon_box_start |- title.south) -- 
-                (I_NW) [rounded corners=1mm] -- 
-                (I_NE) [sharp corners] -- 
-                (icon_box_end |- title.south) -- 
-                cycle;
-            \draw[ddadmon@#1@titlebg, line width=0.5pt] 
-                (icon_box_start |- title.south) -- 
-                (I_NW) [rounded corners=1mm] -- 
-                (I_NE) [sharp corners] -- 
-                (icon_box_end |- title.south) -- 
+                ([xshift=-0.5pt, yshift=-0.5pt]icon_box_start |- title.south) -- 
+                ([xshift=-0.5pt]icon_box_start |- title.north) [rounded corners=1mm] -- 
+                (icon_box_end |- title.north) [sharp corners] -- 
+                ([yshift=-0.5pt]icon_box_end |- title.south) -- 
                 cycle;
 
             \path(dddeco_center) node[inner sep=0pt] (ddicon) {{\csname ddadmon@#1@iconsize\endcsname\color{ddadmon@#1@iconfg}\csname ddadmon@#1@icon\endcsname}};
@@ -469,8 +452,28 @@
                 ([xshift=\i mm]dddeco |- title.south);
             }
         },
-        overlay unbroken and last={
-            \draw[line width=1.5pt, ddadmon@#1@titlebg] ([xshift=-0.75pt]frame.south east)--++(90:5mm);
+        % Continuous strokes for perfect corner rendering and hairline avoidance
+        overlay unbroken={
+            \draw[line width=1.5pt, ddadmon@#1@titlebg] 
+                ([xshift=0.75pt]frame.north west) |- 
+                ([yshift=0.75pt]frame.south east) -- 
+                ++(90:5mm);
+        },
+        overlay first={
+            \draw[line width=1.5pt, ddadmon@#1@titlebg] 
+                ([xshift=0.75pt]frame.north west) -- 
+                ([xshift=0.75pt]frame.south west);
+        },
+        overlay middle={
+            \draw[line width=1.5pt, ddadmon@#1@titlebg] 
+                ([xshift=0.75pt]frame.north west) -- 
+                ([xshift=0.75pt]frame.south west);
+        },
+        overlay last={
+            \draw[line width=1.5pt, ddadmon@#1@titlebg] 
+                ([xshift=0.75pt]frame.north west) |- 
+                ([yshift=0.75pt]frame.south east) -- 
+                ++(90:5mm);
         }
     }
 }

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sphinx-docdash-pdf-theme-default"
-version = "0.1.49"
+version = "0.1.50"
 authors = [{ name="Jens Frey" }]
 description = "Default PDF theme for the DocDash document authoring system."
 readme = "README.md"
