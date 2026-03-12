@@ -414,6 +414,11 @@
         boxed title style={
             empty, left=1ex, right=0pt
         },
+        % Removing the invisible top and right frame gaps that caused the white hairline
+        toprule=0pt,
+        rightrule=0pt,
+        leftrule=1.5pt,
+        bottomrule=1.5pt,
         underlay boxed title={
             \coordinate (text_box_end) at ([xshift=1ex]title.east); 
 
