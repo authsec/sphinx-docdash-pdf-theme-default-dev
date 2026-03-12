@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.41"
+__version__ = "0.1.42"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -88,6 +88,15 @@ def config_inited(app, config):
             'docdash_show_release': getattr(config, 'docdash_show_release', True),
             'docdash_title_page_color': hex_to_cmyk_string(getattr(config, 'docdash_title_page_color', None)),
         }
+
+        # Footer Logo Resolution
+        footer_logo = getattr(config, 'docdash_footer_logo', None)
+        if footer_logo and isinstance(footer_logo, str):
+            if footer_logo not in config.latex_additional_files:
+                config.latex_additional_files.append(footer_logo)
+            template_vars['docdash_footer_logo'] = os.path.basename(footer_logo)
+        else:
+            template_vars['docdash_footer_logo'] = None
         
         # --- HEADING ALIGNMENT & MARGIN RESOLUTION ---
         global_align = getattr(config, 'docdash_heading_align', 'alternate')
@@ -293,6 +302,9 @@ def setup(app):
             self.body[-1] = self.body[-1].replace('{note}', '{admonition}')
     LaTeXTranslator.visit_admonition = _custom_visit_admonition
     # ---------------------------------
+
+    # General Theme Settings
+    app.add_config_value('docdash_footer_logo', None, 'env')
 
     # Toggles & Text
     app.add_config_value('docdash_subtitle', None, 'env')
