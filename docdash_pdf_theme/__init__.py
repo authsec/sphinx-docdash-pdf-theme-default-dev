@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.46"
+__version__ = "0.1.47"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -87,6 +87,7 @@ def config_inited(app, config):
             'docdash_subtitle': getattr(config, 'docdash_subtitle', None),
             'docdash_show_release': getattr(config, 'docdash_show_release', True),
             'docdash_title_page_color': hex_to_cmyk_string(getattr(config, 'docdash_title_page_color', None)),
+            'docdash_title_page_top_line': getattr(config, 'docdash_title_page_top_line', False),
             'docdash_headsep': getattr(config, 'docdash_headsep', '8mm'),
             'docdash_footskip': getattr(config, 'docdash_footskip', '10mm'),
             'docdash_headheight': getattr(config, 'docdash_headheight', '18pt'),
@@ -329,6 +330,7 @@ def setup(app):
     # ---------------------------------
 
     # General Theme Settings
+    app.add_config_value('docdash_title_page_top_line', False, 'env')
     app.add_config_value('docdash_footer_logo', None, 'env')
     app.add_config_value('docdash_footer_logo_height', '1.5em', 'env')
     app.add_config_value('docdash_headsep', '8mm', 'env')

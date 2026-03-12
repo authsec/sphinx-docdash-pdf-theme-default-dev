@@ -5,6 +5,7 @@
 \usetikzlibrary{calc}
 \usepackage{tcolorbox}
 \tcbuselibrary{skins, hooks, breakable}
+\usepackage{xpatch}
 
 %% Document Geometry and Header/Footer Heights
 <% if docdash_headsep or docdash_footskip %>
@@ -26,6 +27,13 @@
 %%% Style chapters
 
 %% Define and apply the Title Page background color safely
+\makeatletter
+<% if not docdash_title_page_top_line %>
+% Remove the first horizontal rule (top line) from the title page
+\xpatchcmd{\sphinxmaketitle}{\rule{\textwidth}{1pt}}{}{}{}
+<% endif %>
+\makeatother
+
 <% if docdash_title_page_color %>
 \definecolor{titlepagecolor}{cmyk}{<< docdash_title_page_color >>}
 \makeatletter
