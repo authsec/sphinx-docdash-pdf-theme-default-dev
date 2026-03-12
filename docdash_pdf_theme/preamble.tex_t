@@ -10,7 +10,7 @@
 %% Starred commands mirror each other perfectly on both plain and scrheadings styles
 \ofoot*{\pagemark}
 <% if docdash_footer_logo %>
-\ifoot*{\includegraphics[height=1.5em, keepaspectratio]{<< docdash_footer_logo >>}}
+\ifoot*{\includegraphics[height=<< docdash_footer_logo_height >>, keepaspectratio]{<< docdash_footer_logo >>}}
 <% endif %>
 \pagestyle{scrheadings}
 

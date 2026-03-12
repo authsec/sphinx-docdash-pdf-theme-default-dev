@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.42"
+__version__ = "0.1.43"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -97,6 +97,8 @@ def config_inited(app, config):
             template_vars['docdash_footer_logo'] = os.path.basename(footer_logo)
         else:
             template_vars['docdash_footer_logo'] = None
+            
+        template_vars['docdash_footer_logo_height'] = getattr(config, 'docdash_footer_logo_height', '1.5em')
         
         # --- HEADING ALIGNMENT & MARGIN RESOLUTION ---
         global_align = getattr(config, 'docdash_heading_align', 'alternate')
@@ -257,7 +259,7 @@ def config_inited(app, config):
         if key not in config.latex_elements:
             config.latex_elements[key] = value
 
-    # ALWAYS append our preamble so the `normal` pagestyle fix isn't lost
+    # ALWAYS append our preamble so the `normal` pagestyle fix isnt lost
     if 'preamble' in config.latex_elements:
         config.latex_elements['preamble'] += f"\n{my_preamble}"
     else:
@@ -305,6 +307,7 @@ def setup(app):
 
     # General Theme Settings
     app.add_config_value('docdash_footer_logo', None, 'env')
+    app.add_config_value('docdash_footer_logo_height', '1.5em', 'env')
 
     # Toggles & Text
     app.add_config_value('docdash_subtitle', None, 'env')
