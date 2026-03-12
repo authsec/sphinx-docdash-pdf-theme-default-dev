@@ -402,7 +402,7 @@
     docdashadmonitionstyle/.style={
         enhanced, breakable,
         sharp corners,
-        attach boxed title to top left,
+        attach boxed title to top left={xshift=0.25pt},
         fonttitle=\csname ddadmon@#1@titlefont\endcsname,
         coltitle=ddadmon@#1@titlefg,
         colback=ddadmon@#1@contentbg,
@@ -410,6 +410,10 @@
         code={\ifodd\value{tcblayer}\else \tcbset{colback=ddadmon@#1@contentbgnested}\fi},
         coltext=ddadmon@#1@contentfg,
         fontupper=\csname ddadmon@#1@contentfont\endcsname,
+        boxrule=0pt,
+        leftrule=1.5pt,
+        bottomrule=1.5pt,
+        colframe=ddadmon@#1@titlebg,
         boxed title style={
             empty, left=1ex, right=0pt
         },
@@ -420,11 +424,11 @@
             \coordinate (icon_box_end) at ([xshift=\csname ddadmon@#1@iconpad\endcsname]icon_box_start);
             \coordinate (dddeco_center) at ($ (icon_box_start)!.5!(icon_box_end) $); 
 
-            % Shift top border down to align with tcolorbox frame
-            \coordinate (T_NW) at ([yshift=-.5\pgflinewidth]title.north west);
-            \coordinate (T_NE) at ([yshift=-.5\pgflinewidth]text_box_end |- title.north);
-            \coordinate (I_NW) at ([yshift=-.5\pgflinewidth]icon_box_start |- title.north);
-            \coordinate (I_NE) at ([yshift=-.5\pgflinewidth]icon_box_end |- title.north);
+            % Shift top border down to align mathematically with the stroke widths
+            \coordinate (T_NW) at ([yshift=-0.25pt]title.north west);
+            \coordinate (T_NE) at ([yshift=-0.25pt]text_box_end |- title.north);
+            \coordinate (I_NW) at ([yshift=-0.25pt]icon_box_start |- title.north);
+            \coordinate (I_NE) at ([yshift=-0.25pt]icon_box_end |- title.north);
 
             % 1. DRAW Main Title Text Background (Top-Left Rounded)
             \fill[fill=ddadmon@#1@titlebg] 
@@ -433,7 +437,7 @@
                 (T_NW) [sharp corners] -- 
                 (T_NE) -- 
                 cycle;
-            \draw[ddadmon@#1@titlebg] 
+            \draw[ddadmon@#1@titlebg, line width=0.5pt] 
                 (text_box_end |- title.south) -- 
                 (title.south west) [rounded corners=1mm] -- 
                 (T_NW) [sharp corners] -- 
@@ -447,7 +451,7 @@
                 (I_NE) [sharp corners] -- 
                 (icon_box_end |- title.south) -- 
                 cycle;
-            \draw[ddadmon@#1@titlebg] 
+            \draw[ddadmon@#1@titlebg, line width=0.5pt] 
                 (icon_box_start |- title.south) -- 
                 (I_NW) [rounded corners=1mm] -- 
                 (I_NE) [sharp corners] -- 
@@ -465,10 +469,9 @@
                 ([xshift=\i mm]dddeco |- title.south);
             }
         },
-        frame hidden,
-        borderline west={1.5pt}{0pt}{ddadmon@#1@titlebg}, 
-        borderline south={1.5pt}{0pt}{ddadmon@#1@titlebg},
-        overlay={\draw[line width=1.5pt, ddadmon@#1@titlebg] (frame.south east)--++(90:5mm);}
+        overlay unbroken and last={
+            \draw[line width=1.5pt, ddadmon@#1@titlebg] ([xshift=-0.75pt]frame.south east)--++(90:5mm);
+        }
     }
 }
 
