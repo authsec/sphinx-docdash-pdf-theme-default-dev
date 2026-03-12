@@ -441,6 +441,24 @@
                 ([yshift=-0.5pt]icon_box_end |- title.south) -- 
                 cycle;
 
+            % 3. --- RESTORED INWARD STROKES ---
+            % Constructs continuous paths *inside* the filled areas using a fine 0.5pt line.
+            \draw[line width=0.5pt, ddadmon@#1@titlefg]
+                % Draw structural separation and top boundary
+                ([xshift=0.25pt]title.north west) -- 
+                ([xshift=-0.25pt]icon_box_end |- title.north) --
+                ([xshift=-0.25pt, yshift=-0.25pt]icon_box_end |- title.south) % fine-overlaps content
+                % Draw separation between boxes
+                ([xshift=0.25pt]icon_box_start |- title.north) -- 
+                ([xshift=0.25pt]icon_box_start |- title.south) --
+                ([xshift=0.75pt]title.south west); % heavy-overlaps content for antialiasing
+                
+            % Draw closing boundary for the Icon Box itself
+            \draw[line width=0.5pt, ddadmon@#1@titlefg]
+                ([yshift=-0.25pt]icon_box_start |- title.south) -- 
+                ([yshift=-0.25pt]icon_box_end |- title.south);
+
+
             \path(dddeco_center) node[inner sep=0pt] (ddicon) {{\csname ddadmon@#1@iconsize\endcsname\color{ddadmon@#1@iconfg}\csname ddadmon@#1@icon\endcsname}};
 
             \coordinate (dddeco) at ([xshift=\csname ddadmon@#1@decospace\endcsname]icon_box_end); 
