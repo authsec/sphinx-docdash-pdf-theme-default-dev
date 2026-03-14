@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.65"
+__version__ = "0.1.66"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -392,22 +392,18 @@ def process_needs_ast(app, doctree, docname):
         
     from docutils import nodes
     
-    # 1. Traverse all element nodes to find any need wrapper (figure, table, or container)
     for node in list(doctree.traverse(nodes.Element)):
         classes = node.get('classes', [])
         if 'need' not in classes and 'need_node' not in classes and node.tagname != 'need':
             continue
             
-        # Prevent recursive double-processing of nested nodes
         if node.get('docdash_processed'):
             continue
         for child in node.traverse(nodes.Element):
             child['docdash_processed'] = True
 
-        # 2. Extract ID
         nid = node.attributes.get('ids', [None])[0]
         if not nid:
-            # Fallback: Sometimes Sphinx pushes the ID down to a target node
             for child in node.traverse(nodes.target):
                 if child.get('ids'):
                     nid = child['ids'][0]
@@ -415,65 +411,59 @@ def process_needs_ast(app, doctree, docname):
         if not nid:
             continue
 
-        # 3. Extract Title
         title = ''
         if hasattr(app.env, 'needs_all_needs') and nid in app.env.needs_all_needs:
             title = app.env.needs_all_needs[nid].get('title', '')
 
-        # OVER-ENGINEERED SANITIZER to absolutely nuke any possibility of a pgfkeys runaway paragraph
+        # SANITIZER to absolutely nuke any possibility of a pgfkeys runaway paragraph
         def esc(s):
             if not s: return ''
             return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
 
         safe_nid = esc(nid)
         safe_title = esc(title)
-        
-        # Construct bulletproof title string
         title_str = f"{safe_nid}: {safe_title}" if safe_title else safe_nid
 
-        # 4. Construct the new raw LaTeX wrapped tree
+        # Construct the new raw LaTeX wrapped tree
         wrapper = nodes.container(classes=['docdash-flat-need'])
-        # The \docdashneedicon is now cleanly handled inside the LaTeX \newtcolorbox definition
         wrapper.append(nodes.raw('', f'\n\\begin{{docdashneedbox}}{{{title_str}}}\n', format='latex'))
 
         metadata_table = next(iter(node.traverse(nodes.table)), None)
         
-        content_container = None
-        for c in node.traverse(nodes.Element):
-            if 'need-content' in c.get('classes', []):
-                content_container = c
-                break
-
-        # 5. Rebuild Metadata Rows without tables
+        # Flawless Table Demolition and Content Extraction
         if metadata_table:
-            for i, row in enumerate(metadata_table.traverse(nodes.row)):
-                row_text = row.astext()
-                # Skip the header row (it usually contains the ID we just put in the box title)
-                if i == 0 and nid in row_text:
-                    continue
+            rows = list(metadata_table.traverse(nodes.row))
+            if len(rows) > 0:
+                # In Sphinx-Needs, Row 0 is the Header. Row -1 is ALWAYS the Content.
+                # Everything in between is the structural metadata.
+                meta_rows = rows[1:-1] if len(rows) > 2 else []
+                content_row = rows[-1] if len(rows) > 1 else None
 
-                entries = list(row.traverse(nodes.entry))
-                if len(entries) >= 2:
-                    p = nodes.paragraph()
-                    p.append(nodes.raw('', r'\needsmetakey{', format='latex'))
-                    p.extend(entries[0].children)
-                    p.append(nodes.raw('', r'} ', format='latex'))
-                    p.extend(entries[1].children)
-                    wrapper.append(p)
-                else:
-                    for entry in entries:
+                # 1. Process Metadata
+                for row in meta_rows:
+                    entries = list(row.traverse(nodes.entry))
+                    if len(entries) >= 2:
                         p = nodes.paragraph()
-                        p.extend(entry.children)
+                        p.append(nodes.raw('', r'\needsmetakey{', format='latex'))
+                        p.extend(entries[0].children)
+                        p.append(nodes.raw('', r'} ', format='latex'))
+                        p.extend(entries[1].children)
                         wrapper.append(p)
+                    else:
+                        for entry in entries:
+                            p = nodes.paragraph()
+                            p.extend(entry.children)
+                            wrapper.append(p)
 
-        # 6. Append lower content securely
-        if content_container:
-            wrapper.append(nodes.raw('', '\n\\tcblower\n', format='latex'))
-            wrapper.extend(content_container.children)
+                # 2. Trigger lower box color and process Content!
+                if content_row:
+                    wrapper.append(nodes.raw('', '\n\\tcblower\n', format='latex'))
+                    for entry in content_row.traverse(nodes.entry):
+                        wrapper.extend(entry.children)
 
         wrapper.append(nodes.raw('', '\n\\end{docdashneedbox}\n', format='latex'))
         
-        # 7. Demolish the original sphinx-needs table and replace it with our flattener
+        # Demolish the original table and replace it with our flat structure
         node.replace_self(wrapper)
 
 
