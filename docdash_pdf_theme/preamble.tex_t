@@ -543,7 +543,9 @@
         % Prevent the bicolor skin from automatically drawing a border around the lower background
         segmentation style={draw=none},
         segmentation code={
+            \begin{scope}
             \draw[<< docdash_needs_segmentation_style >>] (segmentation.west) -- (segmentation.east);
+            \end{scope}
         },
         before upper={
             \let\toprule\empty
