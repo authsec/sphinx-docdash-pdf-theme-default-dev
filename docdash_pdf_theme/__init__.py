@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.85"
+__version__ = "0.1.86"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -257,7 +257,7 @@ def config_inited(app, config):
                 'title_font', 'title_font_size', 'title_color', 'title_background_color',
                 'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_vertical_position',
                 'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
-                'metadata_key_font', 'metadata_key_color',
+                'metadata_key_font', 'metadata_key_color', 'metadata_key_font_size',
                 'content_background_color', 'content_font', 'content_font_size', 'content_font_color',
                 'segmentation_style', 'segmentation_color'
             ]
@@ -274,6 +274,7 @@ def config_inited(app, config):
                 'metadata_font_size': r'\small',
                 'metadata_font_color': '#495057',
                 'metadata_key_color': '#212529',
+                'metadata_key_font_size': '',
                 'content_background_color': '#FFFFFF',
                 'content_font_size': r'\normalsize',
                 'content_font_color': '#000000',
@@ -585,7 +586,7 @@ def setup(app):
         'title_font', 'title_font_size', 'title_color', 'title_background_color',
         'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_vertical_position',
         'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
-        'metadata_key_font', 'metadata_key_color',
+        'metadata_key_font', 'metadata_key_color', 'metadata_key_font_size',
         'content_background_color', 'content_font', 'content_font_size', 'content_font_color',
         'segmentation_style', 'segmentation_color'
     ]

@@ -517,7 +517,7 @@
 \definecolor{ddneed@seglinefg}{cmyk}{<< docdash_needs_segmentation_color_cmyk >>}
 
 %% Define custom command for wrapping sphinx-needs bold keys
-\newkomafont{needsmetakey}{<% if docdash_needs_metadata_key_font %>\fontspec{<< docdash_needs_metadata_key_font >>}<% endif %>\color{ddneed@metakeyfg}\bfseries}
+\newkomafont{needsmetakey}{<% if docdash_needs_metadata_key_font %>\fontspec{<< docdash_needs_metadata_key_font >>}<% endif %><% if docdash_needs_metadata_key_font_size %><< docdash_needs_metadata_key_font_size >><% endif %>\color{ddneed@metakeyfg}\bfseries}
 \newcommand{\needsmetakey}[1]{{\usekomafont{needsmetakey}#1}}
 
 <% if docdash_needs_title_icon %>
