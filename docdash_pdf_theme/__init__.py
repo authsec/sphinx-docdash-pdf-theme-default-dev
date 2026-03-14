@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.91"
+__version__ = "0.1.92"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -445,7 +445,7 @@ def process_needs_ast(app, doctree, docname):
         # CRITICAL FIX: Extract ALL IDs from every single element inside the need node
         # before we destroy it, so no hyperref anchors are lost!
         all_ids = []
-        for n in node.traverse():
+        for n in node.traverse(nodes.Element):
             if 'ids' in n.attributes:
                 all_ids.extend(n.attributes['ids'])
                 
