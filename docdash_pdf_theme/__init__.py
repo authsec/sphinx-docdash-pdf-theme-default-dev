@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.72"
+__version__ = "0.1.73"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -292,13 +292,13 @@ def config_inited(app, config):
                     base_filename = os.path.basename(val)
                     val = f"\\includegraphics[height=1em, keepaspectratio]{{{base_filename}}}"
                 
-                # Segmentation Line Handling
+                # Segmentation Line Handling for manual TikZ \draw injection
                 if p == 'segmentation_style':
                     val_str = str(val).lower()
                     if val_str in ['none', 'hidden', 'false', '0', '', 'empty']:
                         val = 'draw=none'
                     else:
-                        val = f"{val_str}, draw=ddneed@titlebg, line width=0.5pt"
+                        val = f"{val_str}, ddneed@titlebg, line width=0.5pt"
 
                 template_vars[f'docdash_needs_{p}'] = val
                 

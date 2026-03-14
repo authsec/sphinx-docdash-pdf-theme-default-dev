@@ -526,7 +526,6 @@
 
 \tcbset{
     docdashneedstyle/.style={
-        % Swapped to bicolor skin so colbacklower is completely respected!
         skin=bicolor, breakable,
         sharp corners,
         boxrule=0.5pt,
@@ -540,7 +539,11 @@
         colbacklower=ddneed@contentbg, 
         collower=ddneed@contentfg,   
         fontlower=<% if docdash_needs_content_font %>\fontspec{<< docdash_needs_content_font >>}<% endif %><< docdash_needs_content_font_size >>,
-        segmentation style={<< docdash_needs_segmentation_style >>},
+        
+        % Reverted to manual segmentation code to prevent bicolor skin from drawing a frame around the lower block
+        segmentation code={
+            \draw[<< docdash_needs_segmentation_style >>] (segmentation.west) -- (segmentation.east);
+        },
         before upper={
             \let\toprule\empty
             \let\midrule\empty
