@@ -540,15 +540,9 @@
         colbacklower=ddneed@contentbg, 
         collower=ddneed@contentfg,   
         fontlower=<% if docdash_needs_content_font %>\fontspec{<< docdash_needs_content_font >>}<% endif %><< docdash_needs_content_font_size >>,
-        
         % CRITICAL FIX: Explicitly set fill and draw to the content color so bicolor doesn't accidentally drop the fill!
         segmentation style={draw=ddneed@contentbg, fill=ddneed@contentbg, solid},
-        segmentation code={
-            \begin{scope}
-            \draw[<< docdash_needs_segmentation_style >>] (segmentation.west) -- (segmentation.east);
-            \end{scope}
-        },
-        
+        segmentation code={\begin{scope}\draw[<< docdash_needs_segmentation_style >>] (segmentation.west) -- (segmentation.east);\end{scope}},
         before upper={
             \let\toprule\empty
             \let\midrule\empty
