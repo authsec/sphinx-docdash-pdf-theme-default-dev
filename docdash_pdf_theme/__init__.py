@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.62"
+__version__ = "0.1.63"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -413,10 +413,10 @@ def process_needs_ast(app, doctree, docname):
         if hasattr(app.env, 'needs_all_needs') and nid in app.env.needs_all_needs:
             title = app.env.needs_all_needs[nid].get('title', '')
 
-        # Sanitize Title and ID to prevent runaway paragraphs in LaTeX pgfkeys
+        # OVER-ENGINEERED SANITIZER to absolutely nuke any possibility of a pgfkeys runaway paragraph
         def esc(s):
             if not s: return ''
-            return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('\n', ' ').replace('\r', '').strip()
+            return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
 
         safe_nid = esc(nid)
         safe_title = esc(title)
