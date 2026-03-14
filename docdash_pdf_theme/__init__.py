@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.90"
+__version__ = "0.1.91"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -431,20 +431,31 @@ def process_needs_ast(app, doctree, docname):
         for child in node.traverse(nodes.Element):
             child['docdash_processed'] = True
 
+        # Extract the exact primary Needs ID
+        node_ids = node.attributes.get('ids', [])
+        nid = node_ids[0] if node_ids else None
+        if not nid:
+            for child in node.traverse(nodes.target):
+                if child.get('ids'):
+                    nid = child['ids'][0]
+                    break
+        if not nid:
+            continue
+
+        # CRITICAL FIX: Extract ALL IDs from every single element inside the need node
+        # before we destroy it, so no hyperref anchors are lost!
         all_ids = []
-        if 'ids' in node.attributes:
-            all_ids.extend(node.attributes['ids'])
-        
-        for child in node.traverse(nodes.target):
-            if 'ids' in child.attributes:
-                all_ids.extend(child.attributes['ids'])
+        for n in node.traverse():
+            if 'ids' in n.attributes:
+                all_ids.extend(n.attributes['ids'])
                 
         # Remove duplicates while preserving order
         unique_ids = list(dict.fromkeys(all_ids))
         
-        nid = unique_ids[0] if unique_ids else None
-        if not nid:
-            continue
+        # Sphinx-Needs internally maps cross-references to the "needs:" namespace,
+        # so we forcefully ensure it exists as a fallback anchor.
+        if nid and f"needs:{nid}" not in unique_ids:
+            unique_ids.append(f"needs:{nid}")
 
         title = ''
         if hasattr(app.env, 'needs_all_needs') and nid in app.env.needs_all_needs:
