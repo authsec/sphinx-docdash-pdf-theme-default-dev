@@ -125,6 +125,11 @@ docdash_part_number_number_color = '#FFBB00'
 docdash_chapter_number_color = ""  # Clears the built-in blue default to inherit #00FF11 from part!
 docdash_section_number_color = ""  # Clears the built-in gray default
 
+# Content Styling
+docdash_needs_content_font = 'Stardos Stencil'
+docdash_needs_content_font_size = r'\fontsize{9pt}{9pt}\selectfont'
+docdash_needs_content_font_color = '#FFFFFF'
+
 ```
 
 ### 4. Core Theme Fonts
