@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.89"
+__version__ = "0.1.90"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -431,13 +431,18 @@ def process_needs_ast(app, doctree, docname):
         for child in node.traverse(nodes.Element):
             child['docdash_processed'] = True
 
-        node_ids = node.attributes.get('ids', [])
-        nid = node_ids[0] if node_ids else None
-        if not nid:
-            for child in node.traverse(nodes.target):
-                if child.get('ids'):
-                    nid = child['ids'][0]
-                    break
+        all_ids = []
+        if 'ids' in node.attributes:
+            all_ids.extend(node.attributes['ids'])
+        
+        for child in node.traverse(nodes.target):
+            if 'ids' in child.attributes:
+                all_ids.extend(child.attributes['ids'])
+                
+        # Remove duplicates while preserving order
+        unique_ids = list(dict.fromkeys(all_ids))
+        
+        nid = unique_ids[0] if unique_ids else None
         if not nid:
             continue
 
@@ -453,10 +458,12 @@ def process_needs_ast(app, doctree, docname):
         safe_nid = esc(nid)
         safe_title = esc(title)
         title_str = f"{safe_nid}: {safe_title}" if safe_title else safe_nid
+        
+        labels_tex = "".join([f"\\phantomsection\\label{{\\detokenize{{{i}}}}}" for i in unique_ids])
 
         # Construct the new raw LaTeX wrapped tree
         wrapper = nodes.container(classes=['docdash-flat-need'])
-        wrapper.append(nodes.raw('', f'\n\\begin{{docdashneedbox}}{{{title_str}}}\n', format='latex'))
+        wrapper.append(nodes.raw('', f'\n{labels_tex}\n\\begin{{docdashneedbox}}{{{title_str}}}\n', format='latex'))
 
         metadata_table = next(iter(node.traverse(nodes.table)), None)
         
