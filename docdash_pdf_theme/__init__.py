@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.83"
+__version__ = "0.1.84"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -476,6 +476,15 @@ def process_needs_ast(app, doctree, docname):
                         wrapper.append(p)
                     else:
                         for entry in entries:
+                            # CRITICAL FIX: Intercept the hidden needs_label tag in single-column layouts
+                            for inline_node in list(entry.traverse(nodes.inline)):
+                                if 'needs_label' in inline_node.get('classes', []):
+                                    wrap = nodes.inline()
+                                    wrap.append(nodes.raw('', r'\needsmetakey{', format='latex'))
+                                    wrap.extend(inline_node.children)
+                                    wrap.append(nodes.raw('', r'}', format='latex'))
+                                    inline_node.replace_self(wrap)
+                                    
                             p = nodes.paragraph()
                             p.extend(entry.children)
                             wrapper.append(p)
