@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.66"
+__version__ = "0.1.67"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -351,7 +351,7 @@ def config_inited(app, config):
             config.latex_elements['sphinxsetup'] = ', '.join(missing_setups)
     # ---------------------------------
 
-    # ALWAYS append our preamble so the `normal` pagestyle fix isn't lost
+    # ALWAYS append our preamble so the `normal` pagestyle fix isnt lost
     if 'preamble' in config.latex_elements:
         config.latex_elements['preamble'] += f"\n{my_preamble}"
     else:

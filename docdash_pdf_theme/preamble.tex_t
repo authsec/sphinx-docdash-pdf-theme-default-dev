@@ -139,7 +139,7 @@
 <% endif %>
 
 <% if docdash_subsubsection_font or docdash_subsubsection_color or docdash_subsubsection_size %>
-\addtokomafont{subsubsection}{<% if docdash_subsubsection_color %>\color{ddsubsubsectioncolor}<% endif %><% if docdash_subsubsection_size %><< docdash_subsubsection_size >><% endif %><% if docdash_subsubsection_font %>\fontspec{<< docdash_subsubsection_font >>}<% endif %>}
+\addtokomafont{subsubsection}{<% if docdash_subsubsection_color %>\color{ddsubsubsectioncolor}<% endif %><% if docdash_subsubsection_size %><< docdash_subsubsection_size >><% endif %><% if docdash_subsubsection_font %>\fontspec{<< docdash_subsubsection_number_font >>}<% endif %>}
 <% endif %>
 
 %% Custom Elements for Structural Numbers
@@ -519,7 +519,7 @@
 \newcommand{\needsmetakey}[1]{{\usekomafont{needsmetakey}#1}}
 
 <% if docdash_needs_title_icon %>
-\newcommand{\docdashneedicon}{<< docdash_needs_title_icon_size >>\color{ddneed@iconfg}<< docdash_needs_title_icon >> }
+\newcommand{\docdashneedicon}{{<< docdash_needs_title_icon_size >>\color{ddneed@iconfg}<< docdash_needs_title_icon >>}\hspace{0.5em}}
 <% else %>
 \newcommand{\docdashneedicon}{}
 <% endif %>
@@ -554,7 +554,7 @@
 % Ensure title bracket parsing is strictly isolated
 \newtcolorbox{docdashneedbox}[1]{
     docdashneedstyle,
-    title={{\docdashneedicon{} #1}} 
+    title={{\docdashneedicon#1}} 
 }
 
 \makeatother
