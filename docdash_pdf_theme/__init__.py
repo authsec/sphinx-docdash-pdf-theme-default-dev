@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.80"
+__version__ = "0.1.81"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -298,7 +298,7 @@ def config_inited(app, config):
                     if val_str in ['none', 'hidden', 'false', '0', '', 'empty']:
                         val = 'draw=none'
                     else:
-                        # Adding draw= prevents the line color from accidentally overwriting the fill color!
+                        # With 'enhanced' skin, we explicitly tell TikZ to only draw the stroke, never fill it!
                         val = f"{val_str}, draw=ddneed@titlebg, line width=0.5pt"
 
                 template_vars[f'docdash_needs_{p}'] = val
