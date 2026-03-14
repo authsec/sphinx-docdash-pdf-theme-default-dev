@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.84"
+__version__ = "0.1.85"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -259,7 +259,7 @@ def config_inited(app, config):
                 'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
                 'metadata_key_font', 'metadata_key_color',
                 'content_background_color', 'content_font', 'content_font_size', 'content_font_color',
-                'segmentation_style'
+                'segmentation_style', 'segmentation_color'
             ]
             
             needs_defaults = {
@@ -283,7 +283,11 @@ def config_inited(app, config):
             for p in needs_props:
                 val = getattr(config, f'docdash_needs_{p}', None)
                 if val is None:
-                    val = needs_defaults.get(p, '')
+                    if p == 'segmentation_color':
+                        # Default segmentation color to title background color
+                        val = template_vars.get('docdash_needs_title_background_color', needs_defaults['title_background_color'])
+                    else:
+                        val = needs_defaults.get(p, '')
                 
                 # Image Path Icon Detection
                 if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
@@ -298,8 +302,7 @@ def config_inited(app, config):
                     if val_str in ['none', 'hidden', 'false', '0', '', 'empty']:
                         val = 'draw=none'
                     else:
-                        # With 'enhanced' skin, we explicitly tell TikZ to only draw the stroke, never fill it!
-                        val = f"{val_str}, draw=ddneed@titlebg, line width=0.5pt"
+                        val = f"{val_str}, draw=ddneed@seglinefg, line width=0.5pt"
 
                 template_vars[f'docdash_needs_{p}'] = val
                 
@@ -584,7 +587,7 @@ def setup(app):
         'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
         'metadata_key_font', 'metadata_key_color',
         'content_background_color', 'content_font', 'content_font_size', 'content_font_color',
-        'segmentation_style'
+        'segmentation_style', 'segmentation_color'
     ]
     for p in needs_props:
         app.add_config_value(f'docdash_needs_{p}', None, 'env')
