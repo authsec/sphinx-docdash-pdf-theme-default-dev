@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.67"
+__version__ = "0.1.68"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -255,7 +255,7 @@ def config_inited(app, config):
         if 'sphinx_needs' in getattr(config, 'extensions', []):
             needs_props = [
                 'title_font', 'title_font_size', 'title_color', 'title_background_color',
-                'title_icon', 'title_icon_size', 'title_icon_color',
+                'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise',
                 'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
                 'metadata_key_font', 'metadata_key_color',
                 'content_background_color', 'content_font', 'content_font_size', 'content_font_color'
@@ -268,6 +268,7 @@ def config_inited(app, config):
                 'title_icon': '',
                 'title_icon_size': '',
                 'title_icon_color': '#FFFFFF',
+                'title_icon_raise': '0pt',
                 'metadata_background_color': '#E9ECEF',
                 'metadata_font_size': r'\small',
                 'metadata_font_color': '#495057',
@@ -351,7 +352,7 @@ def config_inited(app, config):
             config.latex_elements['sphinxsetup'] = ', '.join(missing_setups)
     # ---------------------------------
 
-    # ALWAYS append our preamble so the `normal` pagestyle fix isnt lost
+    # ALWAYS append our preamble so the `normal` pagestyle fix isn't lost
     if 'preamble' in config.latex_elements:
         config.latex_elements['preamble'] += f"\n{my_preamble}"
     else:
@@ -546,7 +547,7 @@ def setup(app):
     # Sphinx Needs Customization Namespace
     needs_props = [
         'title_font', 'title_font_size', 'title_color', 'title_background_color',
-        'title_icon', 'title_icon_size', 'title_icon_color',
+        'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise',
         'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
         'metadata_key_font', 'metadata_key_color',
         'content_background_color', 'content_font', 'content_font_size', 'content_font_color'
