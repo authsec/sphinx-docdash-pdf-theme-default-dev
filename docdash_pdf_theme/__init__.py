@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.60"
+__version__ = "0.1.61"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -413,16 +413,20 @@ def process_needs_ast(app, doctree, docname):
         if hasattr(app.env, 'needs_all_needs') and nid in app.env.needs_all_needs:
             title = app.env.needs_all_needs[nid].get('title', '')
 
+        # Sanitize Title and ID to prevent runaway paragraphs in LaTeX pgfkeys
         def esc(s):
             if not s: return ''
-            return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&')
+            return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('\n', ' ').replace('\r', '').strip()
 
         safe_nid = esc(nid)
         safe_title = esc(title)
+        
+        # Construct bulletproof title string
+        title_str = f"{safe_nid}: {safe_title}" if safe_title else safe_nid
 
         # 4. Construct the new raw LaTeX wrapped tree
         wrapper = nodes.container(classes=['docdash-flat-need'])
-        wrapper.append(nodes.raw('', f'\n\\begin{{docdashneedbox}}{{\\docdashneedicon{{}} {safe_nid}: {safe_title}}}\n', format='latex'))
+        wrapper.append(nodes.raw('', f'\n\\begin{{docdashneedbox}}{{\\docdashneedicon{{}} {title_str}}}\n', format='latex'))
 
         metadata_table = next(iter(node.traverse(nodes.table)), None)
         
