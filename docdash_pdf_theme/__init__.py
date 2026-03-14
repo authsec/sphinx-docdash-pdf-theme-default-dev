@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.57"
+__version__ = "0.1.58"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -92,6 +92,7 @@ def config_inited(app, config):
             'docdash_footskip': getattr(config, 'docdash_footskip', '10mm'),
             'docdash_headheight': getattr(config, 'docdash_headheight', '18pt'),
             'docdash_footheight': getattr(config, 'docdash_footheight', '25pt'),
+            'extensions': getattr(config, 'extensions', [])
         }
 
         # Title Page Background Image Resolution
@@ -243,6 +244,50 @@ def config_inited(app, config):
                 if p.endswith('_color') or p.endswith('_nested'):
                     template_vars[f'docdash_admonition_{t}_{p}_cmyk'] = hex_to_cmyk_string(val)
 
+        # --- SPHINX NEEDS LOGIC ---
+        if 'sphinx_needs' in getattr(config, 'extensions', []):
+            needs_props = [
+                'title_font', 'title_font_size', 'title_color', 'title_background_color',
+                'title_icon', 'title_icon_size', 'title_icon_color',
+                'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
+                'metadata_key_font', 'metadata_key_color',
+                'content_background_color', 'content_font', 'content_font_size', 'content_font_color'
+            ]
+            
+            needs_defaults = {
+                'title_font_size': r'\large\bfseries',
+                'title_color': '#FFFFFF',
+                'title_background_color': '#0092FA',
+                'title_icon': '',
+                'title_icon_size': '',
+                'title_icon_color': '#FFFFFF',
+                'metadata_background_color': '#E9ECEF',
+                'metadata_font_size': r'\small',
+                'metadata_font_color': '#495057',
+                'metadata_key_color': '#212529',
+                'content_background_color': '#FFFFFF',
+                'content_font_size': r'\normalsize',
+                'content_font_color': '#000000'
+            }
+
+            for p in needs_props:
+                val = getattr(config, f'docdash_needs_{p}', None)
+                if val is None:
+                    val = needs_defaults.get(p, '')
+                
+                # Image Path Icon Detection
+                if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
+                    if val not in config.latex_additional_files:
+                        config.latex_additional_files.append(val)
+                    base_filename = os.path.basename(val)
+                    val = f"\\includegraphics[height=1em, keepaspectratio]{{{base_filename}}}"
+
+                template_vars[f'docdash_needs_{p}'] = val
+                
+                # Pre-calculate CMYK for colors
+                if p.endswith('_color'):
+                    template_vars[f'docdash_needs_{p}_cmyk'] = hex_to_cmyk_string(val)
+
         template_vars['v'] = template_vars
         my_preamble = template.render(**template_vars)
     else:
@@ -333,16 +378,91 @@ def build_finished(app, exception):
     xmp_path.write_text(xmp_content, encoding='utf-8')
 
 def setup(app):
-    # --- SPHINX LATEX WRITER PATCH ---
-    # By default, Sphinx's LaTeX writer forcefully converts generic `.. admonition::` directives 
-    # to use the "note" environment. We intercept this so our theme can style it independently!
+    # --- SPHINX LATEX WRITER PATCH (ADMONITIONS) ---
     _orig_visit_admonition = LaTeXTranslator.visit_admonition
     def _custom_visit_admonition(self, node):
         _orig_visit_admonition(self, node)
-        # Safely replace the hardcoded {note} with {admonition} right after Sphinx appends it
         if self.body and '{note}' in self.body[-1]:
             self.body[-1] = self.body[-1].replace('{note}', '{admonition}')
     LaTeXTranslator.visit_admonition = _custom_visit_admonition
+    
+    # --- SPHINX LATEX WRITER PATCH (NEEDS TCOLORBOX) ---
+    _orig_visit_container = LaTeXTranslator.visit_container
+    _orig_depart_container = LaTeXTranslator.depart_container
+
+    def _custom_visit_container(self, node):
+        classes = node.get('classes', [])
+        if 'need' in classes:
+            nid = node.attributes.get('id', '')
+            title = node.attributes.get('title', '')
+            # Cleanly escape LaTeX special characters from the ID and Title
+            def esc(s): return s.replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&')
+            safe_nid = esc(nid)
+            safe_title = esc(title)
+            
+            # Open the Need box
+            self.body.append(f'\n\\begin{{docdashneedbox}}{{\\docdashneedicon{safe_nid}: {safe_title}}}\n')
+        elif 'need-content' in classes:
+            # Trigger the lower part of the tcolorbox
+            self.body.append('\n\\tcblower\n')
+            _orig_visit_container(self, node)
+        else:
+            _orig_visit_container(self, node)
+
+    def _custom_depart_container(self, node):
+        classes = node.get('classes', [])
+        if 'need' in classes:
+            self.body.append('\n\\end{docdashneedbox}\n')
+        elif 'need-content' in classes:
+            _orig_depart_container(self, node)
+        else:
+            _orig_depart_container(self, node)
+
+    LaTeXTranslator.visit_container = _custom_visit_container
+    LaTeXTranslator.depart_container = _custom_depart_container
+
+    # --- SPHINX NEEDS METADATA KEYWORD STYLING PATCH ---
+    _orig_visit_strong = getattr(LaTeXTranslator, 'visit_strong', None)
+    _orig_depart_strong = getattr(LaTeXTranslator, 'depart_strong', None)
+
+    if _orig_visit_strong and _orig_depart_strong:
+        def _custom_visit_strong(self, node):
+            in_need = False
+            in_content = False
+            curr = node
+            while curr.parent:
+                curr = curr.parent
+                classes = curr.get('classes', [])
+                if 'need-content' in classes:
+                    in_content = True
+                if 'need' in classes:
+                    in_need = True
+            
+            # If inside the Need table (upper part), but outside content (lower part), wrap strongs with our metakey macro!
+            if in_need and not in_content:
+                self.body.append(r'\needsmetakey{')
+            else:
+                _orig_visit_strong(self, node)
+
+        def _custom_depart_strong(self, node):
+            in_need = False
+            in_content = False
+            curr = node
+            while curr.parent:
+                curr = curr.parent
+                classes = curr.get('classes', [])
+                if 'need-content' in classes:
+                    in_content = True
+                if 'need' in classes:
+                    in_need = True
+            
+            if in_need and not in_content:
+                self.body.append('}')
+            else:
+                _orig_depart_strong(self, node)
+
+        LaTeXTranslator.visit_strong = _custom_visit_strong
+        LaTeXTranslator.depart_strong = _custom_depart_strong
     # ---------------------------------
 
     # General Theme Settings
@@ -362,8 +482,8 @@ def setup(app):
     app.add_config_value('docdash_numbers_in_margin', True, 'env')
     
     # Alignment Toggles
-    app.add_config_value('docdash_heading_align', 'alternate', 'env') # 'alternate', 'left', 'right'
-    app.add_config_value('docdash_heading_margin_space', '1.5em', 'env') # Global default space
+    app.add_config_value('docdash_heading_align', 'alternate', 'env')
+    app.add_config_value('docdash_heading_margin_space', '1.5em', 'env')
     for el in ['chapter', 'section', 'subsection', 'subsubsection']:
         app.add_config_value(f'docdash_{el}_align', None, 'env')
         app.add_config_value(f'docdash_{el}_number_margin', None, 'env')
@@ -383,7 +503,7 @@ def setup(app):
     app.add_config_value('docdash_sans_font', 'Exo 2', 'env')
     app.add_config_value('docdash_mono_font', 'IosevkaTerm NF', 'env')
 
-    # Register Universal Element Customization Namespace with NO defaults
+    # Register Universal Element Customization Namespace
     elements = [
         'title_page', 'title', 'subtitle', 'author', 'date', 'release_version', 
         'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
@@ -410,6 +530,17 @@ def setup(app):
     for t in admon_types:
         for p in admon_props:
             app.add_config_value(f'docdash_admonition_{t}_{p}', None, 'env')
+
+    # Sphinx Needs Customization Namespace
+    needs_props = [
+        'title_font', 'title_font_size', 'title_color', 'title_background_color',
+        'title_icon', 'title_icon_size', 'title_icon_color',
+        'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
+        'metadata_key_font', 'metadata_key_color',
+        'content_background_color', 'content_font', 'content_font_size', 'content_font_color'
+    ]
+    for p in needs_props:
+        app.add_config_value(f'docdash_needs_{p}', None, 'env')
 
     app.connect('config-inited', config_inited, priority=900)
     app.connect('build-finished', build_finished)

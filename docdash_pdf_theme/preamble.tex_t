@@ -403,7 +403,6 @@
         enhanced, breakable,
         sharp corners,
         % xshift aligns the 0.4pt stroke exactly over the 1.5pt body stroke
-        % yshift pushes the title box down by exactly half the 0.4pt stroke to make it flush
         attach boxed title to top left={xshift=0.2pt, yshift=0.2pt},
         fonttitle=\csname ddadmon@#1@titlefont\endcsname,
         coltitle=ddadmon@#1@titlefg,
@@ -496,3 +495,70 @@
     \end{docdashadmonbox}%
 }
 \makeatother
+
+%% ----------------------------------------------------
+%% DYNAMIC SPHINX-NEEDS STYLING
+%% ----------------------------------------------------
+<% if 'sphinx_needs' in extensions %>
+\makeatletter
+
+\definecolor{ddneed@titlebg}{cmyk}{<< docdash_needs_title_background_color_cmyk >>}
+\definecolor{ddneed@titlefg}{cmyk}{<< docdash_needs_title_color_cmyk >>}
+\definecolor{ddneed@iconfg}{cmyk}{<< docdash_needs_title_icon_color_cmyk >>}
+
+\definecolor{ddneed@metabg}{cmyk}{<< docdash_needs_metadata_background_color_cmyk >>}
+\definecolor{ddneed@metafg}{cmyk}{<< docdash_needs_metadata_font_color_cmyk >>}
+\definecolor{ddneed@metakeyfg}{cmyk}{<< docdash_needs_metadata_key_color_cmyk >>}
+
+\definecolor{ddneed@contentbg}{cmyk}{<< docdash_needs_content_background_color_cmyk >>}
+\definecolor{ddneed@contentfg}{cmyk}{<< docdash_needs_content_font_color_cmyk >>}
+
+%% Define custom command for wrapping sphinx-needs bold keys
+\newkomafont{needsmetakey}{<% if docdash_needs_metadata_key_font %>\fontspec{<< docdash_needs_metadata_key_font >>}<% endif %>\color{ddneed@metakeyfg}\bfseries}
+\newcommand{\needsmetakey}[1]{{\usekomafont{needsmetakey}#1}}
+
+<% if docdash_needs_title_icon %>
+\newcommand{\docdashneedicon}{<< docdash_needs_title_icon_size >>\color{ddneed@iconfg}<< docdash_needs_title_icon >> }
+<% else %>
+\newcommand{\docdashneedicon}{}
+<% endif %>
+
+\tcbset{
+    docdashneedstyle/.style={
+        enhanced, breakable,
+        sharp corners,
+        boxrule=0.5pt,
+        colframe=ddneed@titlebg,
+        colbacktitle=ddneed@titlebg,
+        coltitle=ddneed@titlefg,
+        fonttitle=<% if docdash_needs_title_font %>\fontspec{<< docdash_needs_title_font >>}<% endif %><< docdash_needs_title_font_size >>,
+        
+        %% UPPER PART (Metadata Area)
+        colback=ddneed@metabg, 
+        colupper=ddneed@metafg,
+        fontupper=<% if docdash_needs_metadata_font %>\fontspec{<< docdash_needs_metadata_font >>}<% endif %><< docdash_needs_metadata_font_size >>,
+        
+        %% LOWER PART (Content Area)
+        colbacklower=ddneed@contentbg, 
+        collower=ddneed@contentfg,   
+        fontlower=<% if docdash_needs_content_font %>\fontspec{<< docdash_needs_content_font >>}<% endif %><< docdash_needs_content_font_size >>,
+        
+        segmentation style={solid, draw=ddneed@titlebg, line width=0.5pt},
+        
+        % Automatically suppress heavy sphinx-needs table lines in the metadata
+        before upper={
+            \let\toprule\empty
+            \let\midrule\empty
+            \let\bottomrule\empty
+            \let\hline\empty
+        }
+    }
+}
+
+\newtcolorbox{docdashneedbox}[1]{
+    docdashneedstyle,
+    title={#1}
+}
+
+\makeatother
+<% endif %>
