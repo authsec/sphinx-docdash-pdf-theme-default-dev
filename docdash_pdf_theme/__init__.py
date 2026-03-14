@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.69"
+__version__ = "0.1.70"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -255,7 +255,7 @@ def config_inited(app, config):
         if 'sphinx_needs' in getattr(config, 'extensions', []):
             needs_props = [
                 'title_font', 'title_font_size', 'title_color', 'title_background_color',
-                'title_icon', 'title_icon_size', 'title_icon_color',
+                'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_vertical_position',
                 'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
                 'metadata_key_font', 'metadata_key_color',
                 'content_background_color', 'content_font', 'content_font_size', 'content_font_color'
@@ -300,7 +300,7 @@ def config_inited(app, config):
             manual_raise = getattr(config, 'docdash_needs_title_icon_raise', None)
 
             if v_pos == 'middle':
-                template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.5ex - 0.5\height\relax'
+                template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.5\ht\strutbox - 0.5\height\relax'
             elif v_pos == 'top':
                 template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr \ht\strutbox - \height\relax'
             elif v_pos == 'bottom':
