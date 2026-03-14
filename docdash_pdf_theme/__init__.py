@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.71"
+__version__ = "0.1.72"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -258,7 +258,8 @@ def config_inited(app, config):
                 'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_vertical_position',
                 'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
                 'metadata_key_font', 'metadata_key_color',
-                'content_background_color', 'content_font', 'content_font_size', 'content_font_color'
+                'content_background_color', 'content_font', 'content_font_size', 'content_font_color',
+                'segmentation_style'
             ]
             
             needs_defaults = {
@@ -268,13 +269,15 @@ def config_inited(app, config):
                 'title_icon': '',
                 'title_icon_size': '',
                 'title_icon_color': '#FFFFFF',
+                'title_icon_raise': '0pt',
                 'metadata_background_color': '#E9ECEF',
                 'metadata_font_size': r'\small',
                 'metadata_font_color': '#495057',
                 'metadata_key_color': '#212529',
                 'content_background_color': '#FFFFFF',
                 'content_font_size': r'\normalsize',
-                'content_font_color': '#000000'
+                'content_font_color': '#000000',
+                'segmentation_style': 'solid'
             }
 
             for p in needs_props:
@@ -288,6 +291,14 @@ def config_inited(app, config):
                         config.latex_additional_files.append(val)
                     base_filename = os.path.basename(val)
                     val = f"\\includegraphics[height=1em, keepaspectratio]{{{base_filename}}}"
+                
+                # Segmentation Line Handling
+                if p == 'segmentation_style':
+                    val_str = str(val).lower()
+                    if val_str in ['none', 'hidden', 'false', '0', '', 'empty']:
+                        val = 'draw=none'
+                    else:
+                        val = f"{val_str}, draw=ddneed@titlebg, line width=0.5pt"
 
                 template_vars[f'docdash_needs_{p}'] = val
                 
@@ -300,7 +311,7 @@ def config_inited(app, config):
             manual_raise = getattr(config, 'docdash_needs_title_icon_raise', None)
 
             if v_pos == 'middle':
-                template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.5em - 0.5\height\relax'
+                template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.5\ht\strutbox - 0.5\height\relax'
             elif v_pos == 'top':
                 template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.7em - \height\relax'
             elif v_pos == 'bottom':
@@ -562,7 +573,8 @@ def setup(app):
         'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_vertical_position',
         'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
         'metadata_key_font', 'metadata_key_color',
-        'content_background_color', 'content_font', 'content_font_size', 'content_font_color'
+        'content_background_color', 'content_font', 'content_font_size', 'content_font_color',
+        'segmentation_style'
     ]
     for p in needs_props:
         app.add_config_value(f'docdash_needs_{p}', None, 'env')

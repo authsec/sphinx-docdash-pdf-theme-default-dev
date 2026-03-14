@@ -540,8 +540,7 @@
         colbacklower=ddneed@contentbg, 
         collower=ddneed@contentfg,   
         fontlower=<% if docdash_needs_content_font %>\fontspec{<< docdash_needs_content_font >>}<% endif %><< docdash_needs_content_font_size >>,
-        % The segmentation style needs to be manually drawn for standard skins like bicolor
-        segmentation style={solid, draw=ddneed@titlebg, line width=0.5pt},
+        segmentation style={<< docdash_needs_segmentation_style >>},
         before upper={
             \let\toprule\empty
             \let\midrule\empty
