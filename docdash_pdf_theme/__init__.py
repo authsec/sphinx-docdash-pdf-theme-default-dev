@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.61"
+__version__ = "0.1.62"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -426,7 +426,8 @@ def process_needs_ast(app, doctree, docname):
 
         # 4. Construct the new raw LaTeX wrapped tree
         wrapper = nodes.container(classes=['docdash-flat-need'])
-        wrapper.append(nodes.raw('', f'\n\\begin{{docdashneedbox}}{{\\docdashneedicon{{}} {title_str}}}\n', format='latex'))
+        # The \docdashneedicon is now cleanly handled inside the LaTeX \newtcolorbox definition
+        wrapper.append(nodes.raw('', f'\n\\begin{{docdashneedbox}}{{{title_str}}}\n', format='latex'))
 
         metadata_table = next(iter(node.traverse(nodes.table)), None)
         
