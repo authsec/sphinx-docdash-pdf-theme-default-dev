@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.88"
+__version__ = "0.1.89"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -431,7 +431,8 @@ def process_needs_ast(app, doctree, docname):
         for child in node.traverse(nodes.Element):
             child['docdash_processed'] = True
 
-        nid = node.attributes.get('ids', [None])[0]
+        node_ids = node.attributes.get('ids', [])
+        nid = node_ids[0] if node_ids else None
         if not nid:
             for child in node.traverse(nodes.target):
                 if child.get('ids'):
