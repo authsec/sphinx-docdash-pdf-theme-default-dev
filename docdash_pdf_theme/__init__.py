@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.63"
+__version__ = "0.1.64"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -20,8 +20,15 @@ def hex_to_cmyk_string(hex_color: str) -> str:
         return None
         
     hex_color = hex_color.lstrip('#')
+    
+    # Support 8-char (RGBA) by dropping alpha, and 3-char shorthand
+    if len(hex_color) == 8:
+        hex_color = hex_color[:6]
+    elif len(hex_color) == 3:
+        hex_color = ''.join([c*2 for c in hex_color])
+        
     if len(hex_color) != 6:
-        logger.warning(f"[DocDash] Invalid hex color '{hex_color}'. Falling back to black.")
+        logger.warning(f"[DocDash] Invalid hex color '#{hex_color}'. Falling back to black.")
         return "0, 0, 0, 1"
 
     # Convert Hex to RGB [0.0 - 1.0]
@@ -413,7 +420,7 @@ def process_needs_ast(app, doctree, docname):
         if hasattr(app.env, 'needs_all_needs') and nid in app.env.needs_all_needs:
             title = app.env.needs_all_needs[nid].get('title', '')
 
-        # OVER-ENGINEERED SANITIZER to absolutely nuke any possibility of a pgfkeys runaway paragraph
+        # Sanitize Title and ID to prevent runaway paragraphs in LaTeX pgfkeys
         def esc(s):
             if not s: return ''
             return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
