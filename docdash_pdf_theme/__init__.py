@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.68"
+__version__ = "0.1.69"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -255,7 +255,7 @@ def config_inited(app, config):
         if 'sphinx_needs' in getattr(config, 'extensions', []):
             needs_props = [
                 'title_font', 'title_font_size', 'title_color', 'title_background_color',
-                'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise',
+                'title_icon', 'title_icon_size', 'title_icon_color',
                 'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
                 'metadata_key_font', 'metadata_key_color',
                 'content_background_color', 'content_font', 'content_font_size', 'content_font_color'
@@ -268,7 +268,6 @@ def config_inited(app, config):
                 'title_icon': '',
                 'title_icon_size': '',
                 'title_icon_color': '#FFFFFF',
-                'title_icon_raise': '0pt',
                 'metadata_background_color': '#E9ECEF',
                 'metadata_font_size': r'\small',
                 'metadata_font_color': '#495057',
@@ -295,6 +294,19 @@ def config_inited(app, config):
                 # Pre-calculate CMYK for colors
                 if p.endswith('_color'):
                     template_vars[f'docdash_needs_{p}_cmyk'] = hex_to_cmyk_string(val)
+
+            # Auto-calculate vertical position if requested
+            v_pos = getattr(config, 'docdash_needs_title_vertical_position', None)
+            manual_raise = getattr(config, 'docdash_needs_title_icon_raise', None)
+
+            if v_pos == 'middle':
+                template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.5ex - 0.5\height\relax'
+            elif v_pos == 'top':
+                template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr \ht\strutbox - \height\relax'
+            elif v_pos == 'bottom':
+                template_vars['docdash_needs_title_icon_raise'] = '0pt'
+            else:
+                template_vars['docdash_needs_title_icon_raise'] = manual_raise if manual_raise is not None else '0pt'
 
         template_vars['v'] = template_vars
         my_preamble = template.render(**template_vars)
@@ -547,7 +559,7 @@ def setup(app):
     # Sphinx Needs Customization Namespace
     needs_props = [
         'title_font', 'title_font_size', 'title_color', 'title_background_color',
-        'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise',
+        'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_vertical_position',
         'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
         'metadata_key_font', 'metadata_key_color',
         'content_background_color', 'content_font', 'content_font_size', 'content_font_color'
