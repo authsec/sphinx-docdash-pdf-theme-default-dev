@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.111"
+__version__ = "0.1.112"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -244,15 +244,15 @@ def process_containers_ast(app, doctree, docname):
         safe_title = esc(title)
 
         if safe_title:
-            icon_tex = f"\\csname ddconticon@{match_class}\\endcsname"
+            icon_tex = f"\\csname ddconticon{match_class}\\endcsname"
             title_str = f"title={{{icon_tex} {safe_title}}}"
         else:
             title_str = "notitle"
 
         wrapper = nodes.container(classes=['docdash-flat-container'])
-        wrapper.append(nodes.raw('', f'\n\\begin{{ddcontainer@{match_class}}}[{title_str}]\n', format='latex'))
+        wrapper.append(nodes.raw('', f'\n\\begin{{ddcontainer{match_class}}}[{title_str}]\n', format='latex'))
         wrapper.extend(node.children)
-        wrapper.append(nodes.raw('', f'\n\\end{{ddcontainer@{match_class}}}\n', format='latex'))
+        wrapper.append(nodes.raw('', f'\n\\end{{ddcontainer{match_class}}}\n', format='latex'))
 
         node.replace_self(wrapper)
 
@@ -865,15 +865,15 @@ def process_containers_ast(app, doctree, docname):
         safe_title = esc(title)
 
         if safe_title:
-            icon_tex = f"\\csname ddconticon@{match_class}\\endcsname"
+            icon_tex = f"\\csname ddconticon{match_class}\\endcsname"
             title_str = f"title={{{icon_tex} {safe_title}}}"
         else:
             title_str = "notitle"
 
         wrapper = nodes.container(classes=['docdash-flat-container'])
-        wrapper.append(nodes.raw('', f'\n\\begin{{ddcontainer@{match_class}}}[{title_str}]\n', format='latex'))
+        wrapper.append(nodes.raw('', f'\n\\begin{{ddcontainer{match_class}}}[{title_str}]\n', format='latex'))
         wrapper.extend(node.children)
-        wrapper.append(nodes.raw('', f'\n\\end{{ddcontainer@{match_class}}}\n', format='latex'))
+        wrapper.append(nodes.raw('', f'\n\\end{{ddcontainer{match_class}}}\n', format='latex'))
 
         node.replace_self(wrapper)
 
