@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.101"
+__version__ = "0.1.102"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -72,6 +72,54 @@ def adjust_hex_brightness(hex_color: str, percentage: float) -> str:
     if has_alpha:
         return f"#{r:02X}{g:02X}{b:02X}{alpha_str}"
     return f"#{r:02X}{g:02X}{b:02X}"
+
+def get_highest_contrast_color(hex_color: str, adjust_percent: float = 0.0) -> str:
+    """
+    Finds the color with the highest contrast (black or white) to the given hex color,
+    and optionally lightens or darkens the result.
+    
+    :param hex_color: The original hex color string.
+    :param adjust_percent: Float from -100.0 to 100.0 to soften the contrast color.
+    :return: A black or white hex string (adjusted if requested), preserving alpha.
+    """
+    if not hex_color:
+        return None
+        
+    clean_hex = hex_color.lstrip('#')
+    has_alpha = False
+    alpha_str = ""
+    
+    if len(clean_hex) == 4:
+        clean_hex = ''.join([c*2 for c in clean_hex])
+    elif len(clean_hex) == 3:
+        clean_hex = ''.join([c*2 for c in clean_hex])
+        
+    if len(clean_hex) == 8:
+        has_alpha = True
+        alpha_str = clean_hex[6:8]
+        clean_hex = clean_hex[:6]
+        
+    if len(clean_hex) != 6:
+        logger.warning(f"[DocDash] Invalid hex color '{hex_color}'. Cannot calculate contrast.")
+        return hex_color
+
+    r = int(clean_hex[0:2], 16)
+    g = int(clean_hex[2:4], 16)
+    b = int(clean_hex[4:6], 16)
+
+    # Calculate perceived brightness using the standard YIQ formula
+    brightness = (r * 299 + g * 587 + b * 114) / 1000
+    
+    # Light background -> Black text, Dark background -> White text
+    contrast_hex = "#000000" if brightness > 128 else "#FFFFFF"
+    
+    if has_alpha:
+        contrast_hex += alpha_str
+        
+    if adjust_percent != 0.0:
+        return adjust_hex_brightness(contrast_hex, adjust_percent)
+        
+    return contrast_hex
 
 def hex_to_cmyk_string(hex_color: str) -> str:
     """Converts a hex color string (e.g., '#FF0000') to a LaTeX CMYK string."""
