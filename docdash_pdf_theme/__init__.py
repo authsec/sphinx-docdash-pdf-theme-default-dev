@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.97"
+__version__ = "0.1.98"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -255,7 +255,7 @@ def config_inited(app, config):
         if 'sphinx_needs' in getattr(config, 'extensions', []):
             needs_props = [
                 'title_font', 'title_font_size', 'title_color', 'title_background_color',
-                'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_vertical_position',
+                'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_icon_raise_offset', 'title_vertical_position',
                 'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
                 'metadata_key_font', 'metadata_key_color', 'metadata_key_font_size',
                 'content_background_color', 'content_font', 'content_font_size', 'content_font_color',
@@ -270,6 +270,7 @@ def config_inited(app, config):
                 'title_icon_size': '',
                 'title_icon_color': '#FFFFFF',
                 'title_icon_raise': '0pt',
+                'title_icon_raise_offset': '0pt',
                 'metadata_background_color': '#E9ECEF',
                 'metadata_font_size': r'\small',
                 'metadata_font_color': '#495057',
@@ -314,14 +315,18 @@ def config_inited(app, config):
             # Auto-calculate vertical position using robust total bounding box math
             v_pos = getattr(config, 'docdash_needs_title_vertical_position', None)
             manual_raise = getattr(config, 'docdash_needs_title_icon_raise', None)
+            offset = getattr(config, 'docdash_needs_title_icon_raise_offset', '0pt')
+            
+            if not offset:
+                offset = '0pt'
 
             if v_pos == 'middle':
-                # Aligns the exact center of the icon with the exact cap-height of the font
-                template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.5\fontcharht\font`X - 0.5\height \relax'
+                # Aligns the exact center of the icon with the exact cap-height of the font, plus manual offset
+                template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr 0.5\fontcharht\font`X - 0.5\height + {offset} \relax'
             elif v_pos == 'top':
-                template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.7em - \height\relax'
+                template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr 0.7em - \height + {offset} \relax'
             elif v_pos == 'bottom':
-                template_vars['docdash_needs_title_icon_raise'] = '0pt'
+                template_vars['docdash_needs_title_icon_raise'] = offset
             else:
                 template_vars['docdash_needs_title_icon_raise'] = manual_raise if manual_raise is not None else '0pt'
 
@@ -604,7 +609,7 @@ def setup(app):
     # Sphinx Needs Customization Namespace
     needs_props = [
         'title_font', 'title_font_size', 'title_color', 'title_background_color',
-        'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_vertical_position',
+        'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_icon_raise_offset', 'title_vertical_position',
         'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
         'metadata_key_font', 'metadata_key_color', 'metadata_key_font_size',
         'content_background_color', 'content_font', 'content_font_size', 'content_font_color',

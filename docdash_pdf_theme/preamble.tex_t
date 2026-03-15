@@ -515,7 +515,7 @@
 \newcommand{\needsmetakey}[1]{{\usekomafont{needsmetakey}#1}}
 
 <% if docdash_needs_title_icon %>
-\newcommand{\docdashneedicon}{\raisebox{<< docdash_needs_title_icon_raise >>}[0pt][0pt]{{<< docdash_needs_title_icon_size >>\color{ddneed@iconfg}<< docdash_needs_title_icon >>}}\hspace{0.5em}}
+\newcommand{\docdashneedicon}{\raisebox{<< docdash_needs_title_icon_raise >>}{{<< docdash_needs_title_icon_size >>\color{ddneed@iconfg}<< docdash_needs_title_icon >>}}\hspace{0.5em}}
 <% else %>
 \newcommand{\docdashneedicon}{}
 <% endif %>
