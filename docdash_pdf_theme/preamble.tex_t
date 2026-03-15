@@ -448,6 +448,8 @@
     docdashadmonitionstyle/.style={
         enhanced, breakable,
         sharp corners,
+        before skip=2.2em plus 0.5em minus 0.5em,
+        after skip=1.5em plus 0.5em minus 0.5em,
         % xshift aligns the 0.4pt stroke exactly over the 1.5pt body stroke
         % yshift pushes the title box down by exactly half the 0.4pt stroke to make it flush
         attach boxed title to top left={xshift=0.2pt, yshift=0.2pt},
@@ -566,7 +568,7 @@
 \newcommand{\docdashneedicon}{}
 <% endif %>
 
-\tcbset{docdashneedstyle/.style={skin=enhanced,breakable,sharp corners,boxrule=0.5pt,colframe=ddneed@titlebg,colbacktitle=ddneed@titlebg,coltitle=ddneed@titlefg,fonttitle=<% if docdash_needs_title_font %>\fontspec{<< docdash_needs_title_font >>}<% endif %><< docdash_needs_title_font_size >>,colback=ddneed@contentbg,colupper=ddneed@metafg,fontupper=<% if docdash_needs_metadata_font %>\fontspec{<< docdash_needs_metadata_font >>}<% endif %><< docdash_needs_metadata_font_size >>,collower=ddneed@contentfg,fontlower=<% if docdash_needs_content_font %>\fontspec{<< docdash_needs_content_font >>}<% endif %><< docdash_needs_content_font_size >>,segmentation code={\path[fill=ddneed@metabg] (interior.north west) rectangle (segmentation.east);\draw[<< docdash_needs_segmentation_style >>] (segmentation.west) -- (segmentation.east);},before upper={\let\toprule\empty\let\midrule\empty\let\bottomrule\empty\let\hline\empty\hypersetup{linkcolor=ddneed@metafg,urlcolor=ddneed@metafg,citecolor=ddneed@metafg,filecolor=ddneed@metafg}},before lower={\hypersetup{linkcolor=ddneed@contentfg,urlcolor=ddneed@contentfg,citecolor=ddneed@contentfg,filecolor=ddneed@contentfg}}}}
+\tcbset{docdashneedstyle/.style={skin=enhanced,breakable,sharp corners,boxrule=0.5pt,before skip=1.5em plus 0.5em minus 0.5em,after skip=1.5em plus 0.5em minus 0.5em,colframe=ddneed@titlebg,colbacktitle=ddneed@titlebg,coltitle=ddneed@titlefg,fonttitle=<% if docdash_needs_title_font %>\fontspec{<< docdash_needs_title_font >>}<% endif %><< docdash_needs_title_font_size >>,colback=ddneed@contentbg,colupper=ddneed@metafg,fontupper=<% if docdash_needs_metadata_font %>\fontspec{<< docdash_needs_metadata_font >>}<% endif %><< docdash_needs_metadata_font_size >>,collower=ddneed@contentfg,fontlower=<% if docdash_needs_content_font %>\fontspec{<< docdash_needs_content_font >>}<% endif %><< docdash_needs_content_font_size >>,segmentation code={\path[fill=ddneed@metabg] (interior.north west) rectangle (segmentation.east);\draw[<< docdash_needs_segmentation_style >>] (segmentation.west) -- (segmentation.east);},before upper={\let\toprule\empty\let\midrule\empty\let\bottomrule\empty\let\hline\empty\hypersetup{linkcolor=ddneed@metafg,urlcolor=ddneed@metafg,citecolor=ddneed@metafg,filecolor=ddneed@metafg}},before lower={\hypersetup{linkcolor=ddneed@contentfg,urlcolor=ddneed@contentfg,citecolor=ddneed@contentfg,filecolor=ddneed@contentfg}}}}
 
 % Ensure title bracket parsing is strictly isolated without any editor wrapping issues
 \newtcolorbox{docdashneedbox}[1]{docdashneedstyle,title={{\docdashneedicon#1}}}
