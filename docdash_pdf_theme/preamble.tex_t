@@ -30,9 +30,9 @@
 \AddToHook{shipout/background}{%
   \begin{tikzpicture}[remember picture, overlay]
     \ifodd\value{page}
-      \node[rotate=90, anchor=center, text opacity=<< docdash_draft_opacity >>, text=dddraftcolor, font=<% if docdash_draft_font %>\fontspec{<< docdash_draft_font >>}<% endif %><< docdash_draft_font_size >>] at ([xshift=3em]current page.west) {<< docdash_draft_text >>};
+      \node[rotate=90, anchor=center, text opacity=<< docdash_draft_opacity >>, text=dddraftcolor, font=\normalfont<% if docdash_draft_font %>\fontspec{<< docdash_draft_font >>}<% endif %><< docdash_draft_font_size >>] at ([xshift=3em]current page.west) {<< docdash_draft_text >>};
     \else
-      \node[rotate=-90, anchor=center, text opacity=<< docdash_draft_opacity >>, text=dddraftcolor, font=<% if docdash_draft_font %>\fontspec{<< docdash_draft_font >>}<% endif %><< docdash_draft_font_size >>] at ([xshift=-3em]current page.east) {<< docdash_draft_text >>};
+      \node[rotate=-90, anchor=center, text opacity=<< docdash_draft_opacity >>, text=dddraftcolor, font=\normalfont<% if docdash_draft_font %>\fontspec{<< docdash_draft_font >>}<% endif %><< docdash_draft_font_size >>] at ([xshift=-3em]current page.east) {<< docdash_draft_text >>};
     \fi
   \end{tikzpicture}%
 }
