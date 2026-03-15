@@ -7,12 +7,71 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.99"
+__version__ = "0.1.101"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
     safe = re.sub(r'[^A-Za-z0-9\s]+', '', name).strip().replace(' ', '_')
     return safe.lower() or "document"
+
+def adjust_hex_brightness(hex_color: str, percentage: float) -> str:
+    """
+    Adjusts the brightness of a hex color.
+    
+    :param hex_color: The original hex color string (e.g., '#ADAEDD' or '#ADAEDD80').
+    :param percentage: Float from -100.0 to 100.0. Positive values lighten, negative values darken.
+    :return: A new hex color string, preserving alpha if present (e.g., '#CBE1FF' or '#CBE1FF80').
+    """
+    if not hex_color:
+        return None
+        
+    hex_color = hex_color.lstrip('#')
+    has_alpha = False
+    alpha_str = ""
+    
+    # Support 4-char shorthand (RGBA)
+    if len(hex_color) == 4:
+        hex_color = ''.join([c*2 for c in hex_color])
+        
+    # Support 3-char shorthand (RGB)
+    elif len(hex_color) == 3:
+        hex_color = ''.join([c*2 for c in hex_color])
+
+    # Extract and preserve alpha channel
+    if len(hex_color) == 8:
+        has_alpha = True
+        alpha_str = hex_color[6:8]
+        hex_color = hex_color[:6]
+        
+    if len(hex_color) != 6:
+        logger.warning(f"[DocDash] Invalid hex color '#{hex_color}'. Cannot adjust brightness.")
+        return f"#{hex_color}{alpha_str}"
+
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+
+    factor = percentage / 100.0
+
+    if factor > 0:
+        # Lighten towards white
+        r = r + (255 - r) * factor
+        g = g + (255 - g) * factor
+        b = b + (255 - b) * factor
+    elif factor < 0:
+        # Darken towards black
+        r = r * (1 + factor)
+        g = g * (1 + factor)
+        b = b * (1 + factor)
+
+    # Clamp the values between 0 and 255 and format back to Hex
+    r = max(0, min(255, int(round(r))))
+    g = max(0, min(255, int(round(g))))
+    b = max(0, min(255, int(round(b))))
+
+    if has_alpha:
+        return f"#{r:02X}{g:02X}{b:02X}{alpha_str}"
+    return f"#{r:02X}{g:02X}{b:02X}"
 
 def hex_to_cmyk_string(hex_color: str) -> str:
     """Converts a hex color string (e.g., '#FF0000') to a LaTeX CMYK string."""
