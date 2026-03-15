@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.119"
+__version__ = "0.1.121"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
