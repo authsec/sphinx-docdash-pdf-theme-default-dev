@@ -86,9 +86,12 @@
 \definecolor{ddpartbg<< part_num >>}{cmyk}{<< bg_conf.color_cmyk >>}
   <% endif %>
 <% endfor %>
+<% endif %>
 
 \makeatletter
 \renewcommand*{\partheadstartvskip}{%
+  \thispagestyle{empty}% Force removal of headers/footers on Part pages
+<% if docdash_part_backgrounds %>
   \begin{tikzpicture}[remember picture, overlay]
     % Fix the off-by-one counter bug by evaluating the upcoming part number
     \edef\curpart{\the\numexpr\value{part}+1\relax}%
@@ -103,10 +106,10 @@
     \fi
     <% endfor %>
   \end{tikzpicture}%
+<% endif %>
   \null\vskip\z@\@plus 1fil\relax
 }
 \makeatother
-<% endif %>
 
 %% Define Universal Element Colors
 <% if docdash_title_color %>\definecolor{ddtitlecolor}{cmyk}{<< docdash_title_color >>}<% endif %>
