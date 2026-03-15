@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.95"
+__version__ = "0.1.96"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -311,12 +311,12 @@ def config_inited(app, config):
                 if p.endswith('_color'):
                     template_vars[f'docdash_needs_{p}_cmyk'] = hex_to_cmyk_string(val)
 
-            # Auto-calculate vertical position
+            # Auto-calculate vertical position using robust total bounding box math
             v_pos = getattr(config, 'docdash_needs_title_vertical_position', None)
             manual_raise = getattr(config, 'docdash_needs_title_icon_raise', None)
 
             if v_pos == 'middle':
-                template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.5\ht\strutbox - 0.5\height\relax'
+                template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.5\ht\strutbox - 0.5\dp\strutbox - 0.5\height + 0.5\depth \relax'
             elif v_pos == 'top':
                 template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.7em - \height\relax'
             elif v_pos == 'bottom':
@@ -380,7 +380,7 @@ def config_inited(app, config):
             config.latex_elements['sphinxsetup'] = ', '.join(missing_setups)
     # ---------------------------------
 
-    # ALWAYS append our preamble so the `normal` pagestyle fix isnt lost
+    # ALWAYS append our preamble so the `normal` pagestyle fix isn't lost
     if 'preamble' in config.latex_elements:
         config.latex_elements['preamble'] += f"\n{my_preamble}"
     else:
