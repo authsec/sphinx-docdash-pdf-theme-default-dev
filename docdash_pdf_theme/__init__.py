@@ -8,7 +8,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.109"
+__version__ = "0.1.110"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -422,7 +422,9 @@ def config_inited(app, config):
             'content_background_color_nested': '#FFFFFF', 
             'content_font': '',
             'content_font_color': '#000000',
-            'content_font_size': r'\normalsize'
+            'content_font_size': r'\normalsize',
+            'before_skip': '2.2em plus 0.5em minus 0.5em',
+            'after_skip': '1.5em plus 0.5em minus 0.5em'
         }
 
         admon_types = ['generic', 'admonition', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention']
@@ -431,7 +433,8 @@ def config_inited(app, config):
             'title_font', 'title_font_color', 'title_font_size', 
             'title_background_color', 'title_icon_box_background_color', 
             'content_background_color', 'content_background_color_nested', 
-            'content_font', 'content_font_color', 'content_font_size'
+            'content_font', 'content_font_color', 'content_font_size',
+            'before_skip', 'after_skip'
         ]
 
         for t in admon_types:
@@ -466,7 +469,8 @@ def config_inited(app, config):
                 'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
                 'metadata_key_font', 'metadata_key_color', 'metadata_key_font_size',
                 'content_background_color', 'content_font', 'content_font_size', 'content_font_color',
-                'segmentation_style', 'segmentation_color'
+                'segmentation_style', 'segmentation_color',
+                'before_skip', 'after_skip'
             ]
             
             needs_defaults = {
@@ -486,7 +490,9 @@ def config_inited(app, config):
                 'content_background_color': '#FFFFFF',
                 'content_font_size': r'\normalsize',
                 'content_font_color': '#000000',
-                'segmentation_style': 'solid'
+                'segmentation_style': 'solid',
+                'before_skip': '1.5em plus 0.5em minus 0.5em',
+                'after_skip': '1.5em plus 0.5em minus 0.5em'
             }
 
             for p in needs_props:
@@ -814,7 +820,8 @@ def setup(app):
         'title_font', 'title_font_color', 'title_font_size', 
         'title_background_color', 'title_icon_box_background_color', 
         'content_background_color', 'content_background_color_nested', 
-        'content_font', 'content_font_color', 'content_font_size'
+        'content_font', 'content_font_color', 'content_font_size',
+        'before_skip', 'after_skip'
     ]
 
     for t in admon_types:
@@ -828,7 +835,8 @@ def setup(app):
         'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
         'metadata_key_font', 'metadata_key_color', 'metadata_key_font_size',
         'content_background_color', 'content_font', 'content_font_size', 'content_font_color',
-        'segmentation_style', 'segmentation_color'
+        'segmentation_style', 'segmentation_color',
+        'before_skip', 'after_skip'
     ]
     for p in needs_props:
         app.add_config_value(f'docdash_needs_{p}', None, 'env')
