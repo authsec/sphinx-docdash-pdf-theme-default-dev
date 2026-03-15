@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.113"
+__version__ = "0.1.114"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -314,7 +314,9 @@ def config_inited(app, config):
         # --- CONTAINER CUSTOMIZATION LOGIC ---
         containers = getattr(config, 'docdash_containers', {})
         for c_name, c_conf in containers.items():
-            c_conf['title_color_cmyk'] = hex_to_cmyk_string(c_conf.get('title_color', '#000000'))
+            title_color = c_conf.get('title_color', '#000000')
+            c_conf['title_color_cmyk'] = hex_to_cmyk_string(title_color)
+            c_conf['title_font_color_cmyk'] = hex_to_cmyk_string(c_conf.get('title_font_color', get_highest_contrast_color(title_color, title_color, target='foreground')))
             c_conf['content_font_color_cmyk'] = hex_to_cmyk_string(c_conf.get('content_font_color', '#000000'))
             c_conf['content_background_color_cmyk'] = hex_to_cmyk_string(c_conf.get('content_background_color', '#FFFFFF'))
             c_conf.setdefault('title_font_size', r'\large\bfseries')
