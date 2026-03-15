@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.115"
+__version__ = "0.1.117"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -260,17 +260,21 @@ def process_containers_ast(app, doctree, docname):
             return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
 
         safe_title = esc(title)
+        
+        # Sanitize the class name to prevent LaTeX pgfkeys crash
+        safe_match_class = re.sub(r'[^a-zA-Z]', '', match_class)
 
+        # Conditionally apply the complex title styles only if a title actually exists
         if safe_title:
-            icon_tex = f"\\csname ddconticon{match_class}\\endcsname"
-            title_str = f"title={{{icon_tex} {safe_title}}}"
+            icon_tex = f"\\csname ddconticon{safe_match_class}\\endcsname"
+            title_str = f"ddcontainertitlestyle{safe_match_class}, title={{{icon_tex} {safe_title}}}"
         else:
             title_str = "notitle"
 
         wrapper = nodes.container(classes=['docdash-flat-container'])
-        wrapper.append(nodes.raw('', f'\n\\begin{{ddcontainer{match_class}}}[{title_str}]\n', format='latex'))
+        wrapper.append(nodes.raw('', f'\n\\begin{{ddcontainer{safe_match_class}}}[{title_str}]\n', format='latex'))
         wrapper.extend(node.children)
-        wrapper.append(nodes.raw('', f'\n\\end{{ddcontainer{match_class}}}\n', format='latex'))
+        wrapper.append(nodes.raw('', f'\n\\end{{ddcontainer{safe_match_class}}}\n', format='latex'))
 
         node.replace_self(wrapper)
 
@@ -331,7 +335,11 @@ def config_inited(app, config):
 
         # --- CONTAINER CUSTOMIZATION LOGIC ---
         containers = getattr(config, 'docdash_containers', {})
+        safe_containers = {}
         for c_name, c_conf in containers.items():
+            # Sanitize the class name for LaTeX variables
+            safe_name = re.sub(r'[^a-zA-Z]', '', c_name)
+            
             title_color = c_conf.get('title_color', '#000000')
             c_conf['title_color_cmyk'] = hex_to_cmyk_string(title_color)
             c_conf['title_font_color_cmyk'] = hex_to_cmyk_string(c_conf.get('title_font_color', get_highest_contrast_color(title_color, title_color, target='foreground')))
@@ -350,7 +358,10 @@ def config_inited(app, config):
             c_conf.setdefault('title_icon', '')
             c_conf.setdefault('title_font', '')
             c_conf.setdefault('content_font', '')
-        template_vars['docdash_containers'] = containers
+            
+            safe_containers[safe_name] = c_conf
+            
+        template_vars['docdash_containers'] = safe_containers
 
         # --- DRAFT TEXT LOGIC ---
         draft_text = getattr(config, 'docdash_draft_text', None)
@@ -851,57 +862,6 @@ def process_needs_ast(app, doctree, docname):
         # Demolish the original table and replace it with our flat structure
         node.replace_self(wrapper)
 
-
-def process_containers_ast(app, doctree, docname):
-    """Safely extracts container classes and wraps them in custom LaTeX tcolorboxes."""
-    if getattr(app.builder, 'format', '') != 'latex':
-        return
-
-    containers_conf = getattr(app.config, 'docdash_containers', {})
-    if not containers_conf:
-        return
-
-    for node in list(doctree.traverse(nodes.container)):
-        if node.get('docdash_processed'):
-            continue
-
-        match_class = None
-        for c in node.get('classes', []):
-            if c in containers_conf:
-                match_class = c
-                break
-
-        if not match_class:
-            continue
-
-        node['docdash_processed'] = True
-
-        # Extract title preferentially from our robust custom directive
-        title = node.get('docdash_stylebox_title', None)
-        
-        # Fallback to the lowercased :name: option if they used standard containers
-        if title is None:
-            names = node.get('names', [])
-            title = names[0] if names else ""
-
-        def esc(s):
-            if not s: return ''
-            return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
-
-        safe_title = esc(title)
-
-        if safe_title:
-            icon_tex = f"\\csname ddconticon{match_class}\\endcsname"
-            title_str = f"title={{{icon_tex} {safe_title}}}"
-        else:
-            title_str = "notitle"
-
-        wrapper = nodes.container(classes=['docdash-flat-container'])
-        wrapper.append(nodes.raw('', f'\n\\begin{{ddcontainer{match_class}}}[{title_str}]\n', format='latex'))
-        wrapper.extend(node.children)
-        wrapper.append(nodes.raw('', f'\n\\end{{ddcontainer{match_class}}}\n', format='latex'))
-
-        node.replace_self(wrapper)
 
 def setup(app):
     # --- SPHINX LATEX WRITER PATCH (ADMONITIONS) ---
