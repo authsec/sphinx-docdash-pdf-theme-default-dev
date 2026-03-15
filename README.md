@@ -186,8 +186,6 @@ docdash_needs_segmentation_color = "#9900FF"
 
 # docdash_needs_title_icon_raise = r'\dimexpr 0.265em + \height \relax'
 
-
-
 # Content Styling
 docdash_needs_content_font = 'Stardos Stencil'
 docdash_needs_content_font_size = r'\fontsize{9pt}{9pt}\selectfont'
