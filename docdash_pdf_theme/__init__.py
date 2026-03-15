@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.102"
+__version__ = "0.1.103"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -73,53 +73,85 @@ def adjust_hex_brightness(hex_color: str, percentage: float) -> str:
         return f"#{r:02X}{g:02X}{b:02X}{alpha_str}"
     return f"#{r:02X}{g:02X}{b:02X}"
 
-def get_highest_contrast_color(hex_color: str, adjust_percent: float = 0.0) -> str:
+
+def _hex_to_rgb(hex_color: str):
+    """Helper to safely extract 8-bit RGB values from a hex string."""
+    clean = hex_color.lstrip('#')
+    if len(clean) == 8:
+        clean = clean[:6]
+    elif len(clean) == 4:
+        clean = ''.join([c*2 for c in clean[:3]])
+    elif len(clean) == 3:
+        clean = ''.join([c*2 for c in clean])
+    if len(clean) != 6:
+        return 0, 0, 0
+    return int(clean[0:2], 16), int(clean[2:4], 16), int(clean[4:6], 16)
+
+def _get_luminance(hex_color: str) -> float:
+    """Calculates relative luminance according to WCAG 2.0 standards."""
+    r, g, b = _hex_to_rgb(hex_color)
+    srgb = [x / 255.0 for x in (r, g, b)]
+    linear = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in srgb]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+def _get_contrast_ratio(lum1: float, lum2: float) -> float:
+    """Calculates the contrast ratio between two relative luminance values."""
+    l1 = max(lum1, lum2)
+    l2 = min(lum1, lum2)
+    return (l1 + 0.05) / (l2 + 0.05)
+
+def get_highest_contrast_color(foreground_color: str, background_color: str, target: str = 'foreground', adjust_percent: float = 0.0) -> str:
     """
-    Finds the color with the highest contrast (black or white) to the given hex color,
-    and optionally lightens or darkens the result.
+    Modifies the target color to ensure a WCAG 2.0 contrast ratio of at least 4.5:1.
     
-    :param hex_color: The original hex color string.
-    :param adjust_percent: Float from -100.0 to 100.0 to soften the contrast color.
-    :return: A black or white hex string (adjusted if requested), preserving alpha.
+    :param foreground_color: Hex color string (e.g., text color).
+    :param background_color: Hex color string (e.g., background color).
+    :param target: 'foreground' or 'background' (which color should be shifted to reach compliance).
+    :param adjust_percent: Additional percentage to lighten/darken the final valid output.
+    :return: A WCAG compliant hex color string, preserving alpha.
     """
-    if not hex_color:
+    if not foreground_color or not background_color:
         return None
         
-    clean_hex = hex_color.lstrip('#')
-    has_alpha = False
-    alpha_str = ""
-    
-    if len(clean_hex) == 4:
-        clean_hex = ''.join([c*2 for c in clean_hex])
-    elif len(clean_hex) == 3:
-        clean_hex = ''.join([c*2 for c in clean_hex])
+    if target == 'foreground':
+        target_color = foreground_color
+        fixed_color = background_color
+    else:
+        target_color = background_color
+        fixed_color = foreground_color
         
-    if len(clean_hex) == 8:
-        has_alpha = True
-        alpha_str = clean_hex[6:8]
-        clean_hex = clean_hex[:6]
-        
-    if len(clean_hex) != 6:
-        logger.warning(f"[DocDash] Invalid hex color '{hex_color}'. Cannot calculate contrast.")
-        return hex_color
-
-    r = int(clean_hex[0:2], 16)
-    g = int(clean_hex[2:4], 16)
-    b = int(clean_hex[4:6], 16)
-
-    # Calculate perceived brightness using the standard YIQ formula
-    brightness = (r * 299 + g * 587 + b * 114) / 1000
+    lum_fixed = _get_luminance(fixed_color)
+    lum_target = _get_luminance(target_color)
     
-    # Light background -> Black text, Dark background -> White text
-    contrast_hex = "#000000" if brightness > 128 else "#FFFFFF"
+    candidate = target_color
     
-    if has_alpha:
-        contrast_hex += alpha_str
+    if _get_contrast_ratio(lum_fixed, lum_target) < 4.5:
+        # 0.17912 is the exact luminance where black and white offer identical contrast (4.58)
+        direction = -1 if lum_fixed > 0.17912 else 1
         
+        # Iteratively shift the target color towards black/white until it hits the 4.5 threshold
+        for i in range(1, 101):
+            test_color = adjust_hex_brightness(target_color, i * direction)
+            if _get_contrast_ratio(lum_fixed, _get_luminance(test_color)) >= 4.5:
+                candidate = test_color
+                break
+        else:
+            # Fallback to pure black/white if loop is exhausted
+            clean = target_color.lstrip('#')
+            base = "#000000" if direction == -1 else "#FFFFFF"
+            
+            if len(clean) == 8:
+                candidate = base + clean[6:8]
+            elif len(clean) == 4:
+                candidate = base + (clean[3]*2)
+            else:
+                candidate = base
+                
     if adjust_percent != 0.0:
-        return adjust_hex_brightness(contrast_hex, adjust_percent)
+        return adjust_hex_brightness(candidate, adjust_percent)
         
-    return contrast_hex
+    return candidate
+
 
 def hex_to_cmyk_string(hex_color: str) -> str:
     """Converts a hex color string (e.g., '#FF0000') to a LaTeX CMYK string."""
@@ -494,7 +526,7 @@ def config_inited(app, config):
             config.latex_elements['sphinxsetup'] = ', '.join(missing_setups)
     # ---------------------------------
 
-    # ALWAYS append our preamble so the `normal` pagestyle fix isn't lost
+    # ALWAYS append our preamble so the `normal` pagestyle fix isnt lost
     if 'preamble' in config.latex_elements:
         config.latex_elements['preamble'] += f"\n{my_preamble}"
     else:
