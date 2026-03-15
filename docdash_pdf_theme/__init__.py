@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.117"
+__version__ = "0.1.118"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -260,7 +260,7 @@ def process_containers_ast(app, doctree, docname):
             return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
 
         safe_title = esc(title)
-        
+
         # Sanitize the class name to prevent LaTeX pgfkeys crash
         safe_match_class = re.sub(r'[^a-zA-Z]', '', match_class)
 
@@ -354,6 +354,12 @@ def config_inited(app, config):
             if isinstance(frame_val, str):
                 frame_val = frame_val.lower() not in ['false', '0', 'none', 'no']
             c_conf['container_frame'] = frame_val
+            
+            # Extract boolean for text width alignment
+            match_val = c_conf.get('match_text_width', False)
+            if isinstance(match_val, str):
+                match_val = match_val.lower() not in ['false', '0', 'none', 'no']
+            c_conf['match_text_width'] = match_val
             
             c_conf.setdefault('title_icon', '')
             c_conf.setdefault('title_font', '')
