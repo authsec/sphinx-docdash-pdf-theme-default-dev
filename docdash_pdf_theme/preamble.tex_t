@@ -542,6 +542,55 @@
 \makeatother
 
 %% ----------------------------------------------------
+%% DYNAMIC TCOLORBOX CONTAINERS (STYLEBOX)
+%% ----------------------------------------------------
+<% if docdash_containers %>
+\makeatletter
+<% for c_name, c_conf in docdash_containers.items() %>
+\definecolor{ddcont@<< c_name >>@titlefg}{cmyk}{<< c_conf.title_color_cmyk >>}
+\definecolor{ddcont@<< c_name >>@contentfg}{cmyk}{<< c_conf.content_font_color_cmyk >>}
+\definecolor{ddcont@<< c_name >>@contentbg}{cmyk}{<< c_conf.content_background_color_cmyk >>}
+
+\expandafter\def\csname ddconticon@<< c_name >>\endcsname{<% if c_conf.title_icon %><< c_conf.title_icon >>\hspace{0.5em}<% endif %>}
+
+\tcbset{
+    ddcontainerstyle@<< c_name >>/.style={
+        enhanced, breakable,
+        before skip=1.5em plus 0.5em minus 0.5em,
+        after skip=1.5em plus 0.5em minus 0.5em,
+        colback=ddcont@<< c_name >>@contentbg,
+        coltext=ddcont@<< c_name >>@contentfg,
+        fontupper=<% if c_conf.content_font %>\fontspec{<< c_conf.content_font >>}<% endif %><< c_conf.content_font_size >>,
+        coltitle=ddcont@<< c_name >>@titlefg,
+        fonttitle=<% if c_conf.title_font %>\fontspec{<< c_conf.title_font >>}<% endif %><< c_conf.title_font_size >>,
+        <% if not c_conf.container_frame %>
+        frame hidden, boxrule=0pt,
+        <% else %>
+        colframe=ddcont@<< c_name >>@titlefg!50!black,
+        boxrule=1pt,
+        <% endif %>
+        <% if c_conf.title_style == 'floating' %>
+        attach boxed title to top center={yshift=-3mm,yshifttext=-1mm},
+        boxed title style={size=small, colback=ddcont@<< c_name >>@contentbg!40!black, colframe=ddcont@<< c_name >>@contentbg!40!black, rounded corners, boxrule=0pt},
+        <% elif c_conf.title_style == 'ribbon' %>
+        attach boxed title to top left={xshift=5mm,yshift=-3mm},
+        boxed title style={size=small, colback=ddcont@<< c_name >>@contentbg!40!black, colframe=ddcont@<< c_name >>@contentbg!40!black, sharp corners, boxrule=0pt},
+        <% else %>
+        attach boxed title to top left={xshift=0pt, yshift=0pt},
+        boxed title style={empty, left=1ex, right=0pt},
+        <% endif %>
+    }
+}
+
+\newtcolorbox{ddcontainer@<< c_name >>}[1][]{
+    ddcontainerstyle@<< c_name >>,
+    #1
+}
+<% endfor %>
+\makeatother
+<% endif %>
+
+%% ----------------------------------------------------
 %% DYNAMIC SPHINX-NEEDS STYLING
 %% ----------------------------------------------------
 <% if 'sphinx_needs' in extensions %>

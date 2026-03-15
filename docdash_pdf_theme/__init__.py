@@ -5,10 +5,12 @@ from datetime import datetime
 from sphinx.util import logging
 from jinja2 import Environment
 from sphinx.writers.latex import LaTeXTranslator
+from docutils import nodes
+from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.110"
+__version__ = "0.1.111"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -187,6 +189,73 @@ def hex_to_cmyk_string(hex_color: str) -> str:
 
     return f"{c:.3f}, {m:.3f}, {y:.3f}, {k:.3f}"
 
+class StyleBoxDirective(Directive):
+    """Custom directive to safely parse container styles and preserve capitalized titles."""
+    required_arguments = 0
+    optional_arguments = 1
+    final_argument_whitespace = True
+    option_spec = {'class': directives.class_option}
+    has_content = True
+
+    def run(self):
+        container = nodes.container()
+        if self.arguments:
+            container['docdash_stylebox_title'] = self.arguments[0]
+        container['classes'].extend(self.options.get('class', []))
+        self.state.nested_parse(self.content, self.content_offset, container)
+        return [container]
+
+def process_containers_ast(app, doctree, docname):
+    """Safely extracts container classes and wraps them in custom LaTeX tcolorboxes."""
+    if getattr(app.builder, 'format', '') != 'latex':
+        return
+
+    containers_conf = getattr(app.config, 'docdash_containers', {})
+    if not containers_conf:
+        return
+
+    for node in list(doctree.traverse(nodes.container)):
+        if node.get('docdash_processed'):
+            continue
+
+        match_class = None
+        for c in node.get('classes', []):
+            if c in containers_conf:
+                match_class = c
+                break
+
+        if not match_class:
+            continue
+
+        node['docdash_processed'] = True
+
+        # Extract title preferentially from our robust custom directive
+        title = node.get('docdash_stylebox_title', None)
+        
+        # Fallback to the lowercased :name: option if they used standard containers
+        if title is None:
+            names = node.get('names', [])
+            title = names[0] if names else ""
+
+        def esc(s):
+            if not s: return ''
+            return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
+
+        safe_title = esc(title)
+
+        if safe_title:
+            icon_tex = f"\\csname ddconticon@{match_class}\\endcsname"
+            title_str = f"title={{{icon_tex} {safe_title}}}"
+        else:
+            title_str = "notitle"
+
+        wrapper = nodes.container(classes=['docdash-flat-container'])
+        wrapper.append(nodes.raw('', f'\n\\begin{{ddcontainer@{match_class}}}[{title_str}]\n', format='latex'))
+        wrapper.extend(node.children)
+        wrapper.append(nodes.raw('', f'\n\\end{{ddcontainer@{match_class}}}\n', format='latex'))
+
+        node.replace_self(wrapper)
+
 def config_inited(app, config):
     """Fired when Sphinx finishes reading conf.py."""
     
@@ -241,6 +310,21 @@ def config_inited(app, config):
             'docdash_footheight': getattr(config, 'docdash_footheight', '25pt'),
             'extensions': getattr(config, 'extensions', [])
         }
+
+        # --- CONTAINER CUSTOMIZATION LOGIC ---
+        containers = getattr(config, 'docdash_containers', {})
+        for c_name, c_conf in containers.items():
+            c_conf['title_color_cmyk'] = hex_to_cmyk_string(c_conf.get('title_color', '#000000'))
+            c_conf['content_font_color_cmyk'] = hex_to_cmyk_string(c_conf.get('content_font_color', '#000000'))
+            c_conf['content_background_color_cmyk'] = hex_to_cmyk_string(c_conf.get('content_background_color', '#FFFFFF'))
+            c_conf.setdefault('title_font_size', r'\large\bfseries')
+            c_conf.setdefault('content_font_size', r'\normalsize')
+            c_conf.setdefault('title_style', 'classic')
+            c_conf.setdefault('container_frame', True)
+            c_conf.setdefault('title_icon', '')
+            c_conf.setdefault('title_font', '')
+            c_conf.setdefault('content_font', '')
+        template_vars['docdash_containers'] = containers
 
         # --- DRAFT TEXT LOGIC ---
         draft_text = getattr(config, 'docdash_draft_text', None)
@@ -639,8 +723,6 @@ def process_needs_ast(app, doctree, docname):
     if getattr(app.builder, 'format', '') != 'latex':
         return
         
-    from docutils import nodes
-    
     for node in list(doctree.traverse(nodes.Element)):
         classes = node.get('classes', [])
         if 'need' not in classes and 'need_node' not in classes and node.tagname != 'need':
@@ -744,6 +826,57 @@ def process_needs_ast(app, doctree, docname):
         node.replace_self(wrapper)
 
 
+def process_containers_ast(app, doctree, docname):
+    """Safely extracts container classes and wraps them in custom LaTeX tcolorboxes."""
+    if getattr(app.builder, 'format', '') != 'latex':
+        return
+
+    containers_conf = getattr(app.config, 'docdash_containers', {})
+    if not containers_conf:
+        return
+
+    for node in list(doctree.traverse(nodes.container)):
+        if node.get('docdash_processed'):
+            continue
+
+        match_class = None
+        for c in node.get('classes', []):
+            if c in containers_conf:
+                match_class = c
+                break
+
+        if not match_class:
+            continue
+
+        node['docdash_processed'] = True
+
+        # Extract title preferentially from our robust custom directive
+        title = node.get('docdash_stylebox_title', None)
+        
+        # Fallback to the lowercased :name: option if they used standard containers
+        if title is None:
+            names = node.get('names', [])
+            title = names[0] if names else ""
+
+        def esc(s):
+            if not s: return ''
+            return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
+
+        safe_title = esc(title)
+
+        if safe_title:
+            icon_tex = f"\\csname ddconticon@{match_class}\\endcsname"
+            title_str = f"title={{{icon_tex} {safe_title}}}"
+        else:
+            title_str = "notitle"
+
+        wrapper = nodes.container(classes=['docdash-flat-container'])
+        wrapper.append(nodes.raw('', f'\n\\begin{{ddcontainer@{match_class}}}[{title_str}]\n', format='latex'))
+        wrapper.extend(node.children)
+        wrapper.append(nodes.raw('', f'\n\\end{{ddcontainer@{match_class}}}\n', format='latex'))
+
+        node.replace_self(wrapper)
+
 def setup(app):
     # --- SPHINX LATEX WRITER PATCH (ADMONITIONS) ---
     _orig_visit_admonition = LaTeXTranslator.visit_admonition
@@ -753,6 +886,8 @@ def setup(app):
             self.body[-1] = self.body[-1].replace('{note}', '{admonition}')
     LaTeXTranslator.visit_admonition = _custom_visit_admonition
     # ---------------------------------
+
+    app.add_directive('stylebox', StyleBoxDirective)
 
     # General Theme Settings
     app.add_config_value('docdash_title_page_top_line', False, 'env')
@@ -770,6 +905,7 @@ def setup(app):
     app.add_config_value('docdash_show_release', True, 'env')
     app.add_config_value('docdash_numbers_in_margin', True, 'env')
     
+    app.add_config_value('docdash_containers', {}, 'env')
     app.add_config_value('docdash_part_backgrounds', {}, 'env')
     app.add_config_value('docdash_draft_text', None, 'env')
     app.add_config_value('docdash_draft_color', '#00000044', 'env')
@@ -845,6 +981,7 @@ def setup(app):
     app.connect('build-finished', build_finished)
     
     # Run the AST Flattener securely at the very end of AST resolution
+    app.connect('doctree-resolved', process_containers_ast, priority=998)
     app.connect('doctree-resolved', process_needs_ast, priority=999)
     
     return {
