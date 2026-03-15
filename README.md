@@ -125,6 +125,19 @@ docdash_part_number_number_color = '#FFBB00'
 docdash_chapter_number_color = ""  # Clears the built-in blue default to inherit #00FF11 from part!
 docdash_section_number_color = ""  # Clears the built-in gray default
 
+docdash_admonition_warning_title_icon = r'\fontspec{Symbols Nerd Font}\symbol{"F071}'
+# google fonts icon
+#docdash_admonition_tip_title_icon = r'\fontspec{Material Symbols Outlined}\symbol{"E0F0}'
+docdash_admonition_warning_title_icon_color = "#FF0000"
+docdash_admonition_warning_title_background_color = "#FF0000"
+docdash_admonition_warning_title_icon_padding = '5ex' # Pushes the icon far away from the text
+docdash_admonition_warning_title_decoration_spacing = '5mm' # Pushes the >>> lines far away from the icon
+docdash_admonition_warning_title_icon_box_background_color = '#FFFFFF'
+
+docdash_admonition_caution_title_background_color = adjust_hex_brightness(docdash_admonition_warning_title_background_color, 20)
+docdash_admonition_caution_title_icon_box_background_color = adjust_hex_brightness(docdash_admonition_warning_title_icon_box_background_color, -3)
+docdash_admonition_caution_title_icon_color = get_highest_contrast_color(docdash_admonition_caution_title_background_color, docdash_admonition_caution_title_icon_box_background_color)
+
 # Content Styling
 docdash_needs_content_font = 'Stardos Stencil'
 docdash_needs_content_font_size = r'\fontsize{9pt}{9pt}\selectfont'
