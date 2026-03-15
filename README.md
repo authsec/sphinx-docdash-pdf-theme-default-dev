@@ -130,6 +130,56 @@ docdash_needs_content_font = 'Stardos Stencil'
 docdash_needs_content_font_size = r'\fontsize{9pt}{9pt}\selectfont'
 docdash_needs_content_font_color = '#FFFFFF'
 
+### DocDash Needs ###
+
+docdash_needs_metadata_background_color = "#D3FBFF"
+docdash_needs_content_background_color = "#BA0202F4"
+docdash_needs_title_background_color = "#7484FF"
+# # Metadata Styling
+docdash_needs_metadata_font = 'Fontdiner Swanky'
+docdash_needs_metadata_font_color = "#FF9D00"
+docdash_needs_metadata_key_font = 'WDXL Lubrifont JP N'
+docdash_needs_metadata_key_font_size = r'\fontsize{12pt}{12pt}\selectfont'
+
+
+# # Extra: Metadata Keyword Styling (As requested!)
+
+docdash_needs_metadata_key_color = "#00FF0D"
+
+# # Title Styling
+docdash_needs_title_font = 'Sixtyfour'
+docdash_needs_title_font_size = r'\fontsize{16pt}{16pt}\selectfont'
+docdash_needs_title_color = "#DD53BBA7"
+# 
+
+# Icon Styling
+docdash_needs_title_icon = r'\faIcon{gavel}'
+docdash_needs_title_icon_size = r'\fontsize{30pt}{30pt}\selectfont'
+docdash_needs_title_icon_color = "#005EFF"
+docdash_needs_title_vertical_position = 'middle'
+# Disable docdash_needs_title_vertical_position to use docdash_needs_title_icon_raise, 
+# This allows you to manually set the raise
+#docdash_needs_title_icon_raise = r'\dimexpr 0.5em - 0.5\height \relax'
+# Correction factor for visual alignment of the icon as docdash_needs_title_icon_raise tries to find the mathematical center.
+docdash_needs_title_icon_raise_offset = '2pt'
+
+# 'solid' (the default), 'dashed', 'dotted', 'dashdotted', 'densely dotted'
+docdash_needs_segmentation_style = 'dashdotted'
+docdash_needs_segmentation_color = "#9900FF" 
+
+# You can use this to manipulate the title positioning instead of docdash_needs_title_vertical_position, but needt. know what you're doing
+# r'\dimexpr 0.5\ht\strutbox - 0.5\height - 1em\relax'
+# r'\dimexpr 0.5\ht\strutbox - 0.5\height \relax'
+
+# docdash_needs_title_icon_raise = r'\dimexpr 0.265em + \height \relax'
+
+
+
+# Content Styling
+docdash_needs_content_font = 'Stardos Stencil'
+docdash_needs_content_font_size = r'\fontsize{9pt}{9pt}\selectfont'
+docdash_needs_content_font_color = '#FFFFFF'
+
 ```
 
 ### 4. Core Theme Fonts
