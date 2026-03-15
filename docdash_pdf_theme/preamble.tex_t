@@ -90,7 +90,8 @@
 \makeatletter
 \renewcommand*{\partheadstartvskip}{%
   \begin{tikzpicture}[remember picture, overlay]
-    \edef\curpart{\the\value{part}}%
+    % Fix the off-by-one counter bug by evaluating the upcoming part number
+    \edef\curpart{\the\numexpr\value{part}+1\relax}%
     <% for part_num, bg_conf in docdash_part_backgrounds.items() %>
     \ifnum\curpart=<< part_num >>\relax
       <% if bg_conf.image %>
