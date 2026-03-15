@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.98"
+__version__ = "0.1.99"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -328,7 +328,8 @@ def config_inited(app, config):
             elif v_pos == 'bottom':
                 template_vars['docdash_needs_title_icon_raise'] = offset
             else:
-                template_vars['docdash_needs_title_icon_raise'] = manual_raise if manual_raise is not None else '0pt'
+                base_raise = manual_raise if manual_raise is not None else '0pt'
+                template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr {base_raise} + {offset} \relax'
 
         template_vars['v'] = template_vars
         my_preamble = template.render(**template_vars)
