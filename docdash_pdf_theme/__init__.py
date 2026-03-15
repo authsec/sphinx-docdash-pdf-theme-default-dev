@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.112"
+__version__ = "0.1.113"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -320,7 +320,13 @@ def config_inited(app, config):
             c_conf.setdefault('title_font_size', r'\large\bfseries')
             c_conf.setdefault('content_font_size', r'\normalsize')
             c_conf.setdefault('title_style', 'classic')
-            c_conf.setdefault('container_frame', True)
+            
+            # Prevent string conversion bugs (e.g. "False" instead of False)
+            frame_val = c_conf.get('container_frame', True)
+            if isinstance(frame_val, str):
+                frame_val = frame_val.lower() not in ['false', '0', 'none', 'no']
+            c_conf['container_frame'] = frame_val
+            
             c_conf.setdefault('title_icon', '')
             c_conf.setdefault('title_font', '')
             c_conf.setdefault('content_font', '')
