@@ -80,6 +80,13 @@
 
 %% Part Background Image/Color Injection
 <% if docdash_part_backgrounds %>
+%% Pre-define colors to prevent pgfkeys errors
+<% for part_num, bg_conf in docdash_part_backgrounds.items() %>
+  <% if bg_conf.color_cmyk %>
+\definecolor{ddpartbg<< part_num >>}{cmyk}{<< bg_conf.color_cmyk >>}
+  <% endif %>
+<% endfor %>
+
 \makeatletter
 \renewcommand*{\partheadstartvskip}{%
   \begin{tikzpicture}[remember picture, overlay]
@@ -90,7 +97,7 @@
       \node[inner sep=0pt, anchor=center] at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{<< bg_conf.image >>}};
       <% endif %>
       <% if bg_conf.color_cmyk %>
-      \fill[cmyk={<< bg_conf.color_cmyk >>}, opacity=<< bg_conf.opacity >>] (current page.south west) rectangle (current page.north east);
+      \fill[ddpartbg<< part_num >>, opacity=<< bg_conf.opacity >>] (current page.south west) rectangle (current page.north east);
       <% endif %>
     \fi
     <% endfor %>
