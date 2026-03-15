@@ -1,13 +1,14 @@
 import os
 import re
 from pathlib import Path
+from datetime import datetime
 from sphinx.util import logging
 from jinja2 import Environment
 from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.103"
+__version__ = "0.1.104"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -240,6 +241,73 @@ def config_inited(app, config):
             'docdash_footheight': getattr(config, 'docdash_footheight', '25pt'),
             'extensions': getattr(config, 'extensions', [])
         }
+
+        # --- DRAFT TEXT LOGIC ---
+        draft_text = getattr(config, 'docdash_draft_text', None)
+        if draft_text:
+            date_fmt = getattr(config, 'docdash_draft_date_format', '%Y-%m-%d %H:%M:%S')
+            formatted_date = datetime.now().strftime(date_fmt)
+            ext_version = __version__
+            proj_version = getattr(config, 'version', getattr(config, 'release', ''))
+            
+            draft_text = draft_text.replace('{date}', formatted_date)
+            draft_text = draft_text.replace('{ext_version}', ext_version)
+            draft_text = draft_text.replace('{project_version}', proj_version)
+            template_vars['docdash_draft_text'] = draft_text
+            
+            draft_color_str = getattr(config, 'docdash_draft_color', '#00000044')
+            draft_opacity = "1.0"
+            if draft_color_str:
+                clean_hex = draft_color_str.lstrip('#')
+                if len(clean_hex) == 8:
+                    draft_opacity = str(round(int(clean_hex[6:8], 16) / 255.0, 2))
+                    draft_color_str = f"#{clean_hex[:6]}"
+                elif len(clean_hex) == 4:
+                    draft_opacity = str(round(int(clean_hex[3] * 2, 16) / 255.0, 2))
+                    draft_color_str = f"#{clean_hex[:3]}"
+                template_vars['docdash_draft_color_cmyk'] = hex_to_cmyk_string(draft_color_str)
+                template_vars['docdash_draft_opacity'] = draft_opacity
+
+            template_vars['docdash_draft_font'] = getattr(config, 'docdash_draft_font', None)
+            template_vars['docdash_draft_font_size'] = getattr(config, 'docdash_draft_font_size', r'\Huge\bfseries\sffamily')
+        else:
+            template_vars['docdash_draft_text'] = None
+
+        # --- PART BACKGROUNDS LOGIC ---
+        part_bgs = getattr(config, 'docdash_part_backgrounds', {})
+        processed_part_bgs = {}
+        if getattr(config, 'latex_toplevel_sectioning', '') == 'part':
+            for p_num, p_conf in part_bgs.items():
+                try:
+                    p_num_int = int(p_num)
+                except ValueError:
+                    continue
+                
+                img = p_conf.get('image', None)
+                if img:
+                    if img not in config.latex_additional_files:
+                        config.latex_additional_files.append(img)
+                    img = os.path.basename(img)
+                
+                color_str = p_conf.get('color', None)
+                cmyk = None
+                opacity = "1.0"
+                if color_str:
+                    clean_hex = color_str.lstrip('#')
+                    if len(clean_hex) == 8:
+                        opacity = str(round(int(clean_hex[6:8], 16) / 255.0, 2))
+                        color_str = f"#{clean_hex[:6]}"
+                    elif len(clean_hex) == 4:
+                        opacity = str(round(int(clean_hex[3] * 2, 16) / 255.0, 2))
+                        color_str = f"#{clean_hex[:3]}"
+                    cmyk = hex_to_cmyk_string(color_str)
+                    
+                processed_part_bgs[p_num_int] = {
+                    'image': img,
+                    'color_cmyk': cmyk,
+                    'opacity': opacity
+                }
+        template_vars['docdash_part_backgrounds'] = processed_part_bgs
 
         # Title Page Background Image Resolution
         title_bg = getattr(config, 'docdash_title_page_background_image', None)
@@ -526,7 +594,7 @@ def config_inited(app, config):
             config.latex_elements['sphinxsetup'] = ', '.join(missing_setups)
     # ---------------------------------
 
-    # ALWAYS append our preamble so the `normal` pagestyle fix isnt lost
+    # ALWAYS append our preamble so the `normal` pagestyle fix isn't lost
     if 'preamble' in config.latex_elements:
         config.latex_elements['preamble'] += f"\n{my_preamble}"
     else:
@@ -695,6 +763,13 @@ def setup(app):
     app.add_config_value('docdash_subtitle', None, 'env')
     app.add_config_value('docdash_show_release', True, 'env')
     app.add_config_value('docdash_numbers_in_margin', True, 'env')
+    
+    app.add_config_value('docdash_part_backgrounds', {}, 'env')
+    app.add_config_value('docdash_draft_text', None, 'env')
+    app.add_config_value('docdash_draft_color', '#00000044', 'env')
+    app.add_config_value('docdash_draft_date_format', '%Y-%m-%d %H:%M:%S', 'env')
+    app.add_config_value('docdash_draft_font', None, 'env')
+    app.add_config_value('docdash_draft_font_size', r'\Huge\bfseries\sffamily', 'env')
     
     # Alignment Toggles
     app.add_config_value('docdash_heading_align', 'alternate', 'env')

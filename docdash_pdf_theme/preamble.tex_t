@@ -24,6 +24,20 @@
 <% endif %>
 \pagestyle{scrheadings}
 
+%%% Draft Watermark
+<% if docdash_draft_text %>
+\definecolor{dddraftcolor}{cmyk}{<< docdash_draft_color_cmyk >>}
+\AddToHook{shipout/background}{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \ifodd\value{page}
+      \node[rotate=90, anchor=center, text opacity=<< docdash_draft_opacity >>, text=dddraftcolor, font=<% if docdash_draft_font %>\fontspec{<< docdash_draft_font >>}<% endif %><< docdash_draft_font_size >>] at ([xshift=3em]current page.west) {<< docdash_draft_text >>};
+    \else
+      \node[rotate=-90, anchor=center, text opacity=<< docdash_draft_opacity >>, text=dddraftcolor, font=<% if docdash_draft_font %>\fontspec{<< docdash_draft_font >>}<% endif %><< docdash_draft_font_size >>] at ([xshift=-3em]current page.east) {<< docdash_draft_text >>};
+    \fi
+  \end{tikzpicture}%
+}
+<% endif %>
+
 %%% Style chapters
 
 %% Remove the first horizontal rule (top line) from the title page
@@ -64,6 +78,27 @@
 \makeatother
 <% endif %>
 
+%% Part Background Image/Color Injection
+<% if docdash_part_backgrounds %>
+\makeatletter
+\renewcommand*{\partheadstartvskip}{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \edef\curpart{\the\value{part}}%
+    <% for part_num, bg_conf in docdash_part_backgrounds.items() %>
+    \ifnum\curpart=<< part_num >>\relax
+      <% if bg_conf.image %>
+      \node[inner sep=0pt, anchor=center] at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{<< bg_conf.image >>}};
+      <% endif %>
+      <% if bg_conf.color_cmyk %>
+      \fill[cmyk={<< bg_conf.color_cmyk >>}, opacity=<< bg_conf.opacity >>] (current page.south west) rectangle (current page.north east);
+      <% endif %>
+    \fi
+    <% endfor %>
+  \end{tikzpicture}%
+  \null\vskip\z@\@plus 1fil\relax
+}
+\makeatother
+<% endif %>
 
 %% Define Universal Element Colors
 <% if docdash_title_color %>\definecolor{ddtitlecolor}{cmyk}{<< docdash_title_color >>}<% endif %>
