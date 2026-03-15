@@ -7,7 +7,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.96"
+__version__ = "0.1.97"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -316,7 +316,8 @@ def config_inited(app, config):
             manual_raise = getattr(config, 'docdash_needs_title_icon_raise', None)
 
             if v_pos == 'middle':
-                template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.5\ht\strutbox - 0.5\dp\strutbox - 0.5\height + 0.5\depth \relax'
+                # Aligns the exact center of the icon with the exact cap-height of the font
+                template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.5\fontcharht\font`X - 0.5\height \relax'
             elif v_pos == 'top':
                 template_vars['docdash_needs_title_icon_raise'] = r'\dimexpr 0.7em - \height\relax'
             elif v_pos == 'bottom':
