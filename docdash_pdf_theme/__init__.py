@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.114"
+__version__ = "0.1.115"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -191,17 +191,35 @@ def hex_to_cmyk_string(hex_color: str) -> str:
 
 class StyleBoxDirective(Directive):
     """Custom directive to safely parse container styles and preserve capitalized titles."""
-    required_arguments = 0
-    optional_arguments = 1
+    required_arguments = 1
+    optional_arguments = 0
     final_argument_whitespace = True
-    option_spec = {'class': directives.class_option}
+    option_spec = {
+        'name': directives.unchanged,
+        'title': directives.unchanged,
+        'class': directives.class_option
+    }
     has_content = True
 
     def run(self):
+        self.assert_has_content()
         container = nodes.container()
+        
+        # First argument is now the class(es), just like standard .. container::
         if self.arguments:
-            container['docdash_stylebox_title'] = self.arguments[0]
+            container['classes'].extend(self.arguments[0].split())
+            
+        # Allow fallback to standard :class: just in case
         container['classes'].extend(self.options.get('class', []))
+
+        # Retrieve un-mutated title string from either :title: or :name:
+        raw_title = self.options.get('title') or self.options.get('name')
+        if raw_title:
+            container['docdash_stylebox_title'] = raw_title
+
+        # Apply standard docutils name normalization for HTML/Sphinx cross-referencing
+        self.add_name(container)
+
         self.state.nested_parse(self.content, self.content_offset, container)
         return [container]
 
