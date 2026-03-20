@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.123"
+__version__ = "0.1.124"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -283,7 +283,9 @@ def process_epigraph_ast(app, doctree, docname):
     if getattr(app.builder, 'format', '') != 'latex':
         return
         
-    for node in list(doctree.traverse(nodes.epigraph)):
+    for node in list(doctree.traverse(nodes.block_quote)):
+        if 'epigraph' not in node.get('classes', []):
+            continue
         if node.get('docdash_processed'):
             continue
         node['docdash_processed'] = True
