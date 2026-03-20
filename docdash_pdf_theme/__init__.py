@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.126"
+__version__ = "0.1.127"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -279,7 +279,7 @@ def process_containers_ast(app, doctree, docname):
         node.replace_self(wrapper)
 
 def process_epigraph_ast(app, doctree, docname):
-    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, dynamically determining level."""
+    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, handling part/chapter preambles."""
     if getattr(app.builder, 'format', '') != 'latex':
         return
         
@@ -1038,8 +1038,15 @@ def setup(app):
     app.add_config_value('docdash_draft_font', None, 'env')
     app.add_config_value('docdash_draft_font_size', r'\Huge\bfseries\sffamily', 'env')
     
-    # Epigraph / Dictum variables
-    levels = ['epigraph', 'part_epigraph', 'chapter_epigraph', 'section_epigraph', 'subsection_epigraph', 'subsubsection_epigraph']
+    # Base Epigraph / Dictum variables
+    app.add_config_value('docdash_epigraph_width', '0.5\\textwidth', 'env')
+    app.add_config_value('docdash_epigraph_format', '--- #1', 'env')
+    app.add_config_value('docdash_epigraph_align_box', 'right', 'env')
+    app.add_config_value('docdash_epigraph_align_text', 'left', 'env')
+    app.add_config_value('docdash_epigraph_align_author', 'right', 'env')
+
+    # Hierarchical Epigraph Overrides
+    levels = ['part_epigraph', 'chapter_epigraph', 'section_epigraph', 'subsection_epigraph', 'subsubsection_epigraph']
     for l in levels:
         app.add_config_value(f'docdash_{l}_width', None, 'env')
         app.add_config_value(f'docdash_{l}_format', None, 'env')
@@ -1047,12 +1054,6 @@ def setup(app):
         app.add_config_value(f'docdash_{l}_align_text', None, 'env')
         app.add_config_value(f'docdash_{l}_align_author', None, 'env')
         
-    app.add_config_value('docdash_epigraph_width', '0.5\\textwidth', 'env')
-    app.add_config_value('docdash_epigraph_format', '--- #1', 'env')
-    app.add_config_value('docdash_epigraph_align_box', 'right', 'env')
-    app.add_config_value('docdash_epigraph_align_text', 'left', 'env')
-    app.add_config_value('docdash_epigraph_align_author', 'right', 'env')
-    
     # Alignment Toggles
     app.add_config_value('docdash_heading_align', 'alternate', 'env')
     app.add_config_value('docdash_heading_margin_space', '1.5em', 'env')
