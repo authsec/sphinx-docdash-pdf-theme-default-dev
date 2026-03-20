@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.125"
+__version__ = "0.1.126"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -279,7 +279,7 @@ def process_containers_ast(app, doctree, docname):
         node.replace_self(wrapper)
 
 def process_epigraph_ast(app, doctree, docname):
-    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, handling part/chapter preambles."""
+    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, dynamically determining level."""
     if getattr(app.builder, 'format', '') != 'latex':
         return
         
@@ -295,30 +295,32 @@ def process_epigraph_ast(app, doctree, docname):
             continue
         node['docdash_processed'] = True
         
-        parent = node.parent
-        is_preamble = False
-        sec_type = None
-        idx = -1
+        # Calculate section depth and determine sec_type
+        p = node.parent
+        depth = 0
+        while p:
+            if isinstance(p, nodes.section):
+                depth += 1
+            p = p.parent
+            
+        sec_type = 'generic'
+        if toplevel == 'part':
+            type_map = {1: 'part', 2: 'chapter', 3: 'section', 4: 'subsection', 5: 'subsubsection'}
+        else:
+            type_map = {1: 'chapter', 2: 'section', 3: 'subsection', 4: 'subsubsection'}
         
-        # Check if the epigraph is the FIRST element immediately following a structural heading
+        if depth in type_map:
+            sec_type = type_map[depth]
+            
+        # Determine if this is a true KOMA preamble (first element under a heading)
+        is_preamble = False
+        idx = -1
+        parent = node.parent
         if isinstance(parent, nodes.section):
             idx = parent.children.index(node)
             if idx > 0 and isinstance(parent.children[idx-1], nodes.title):
                 is_preamble = True
                 
-                # Calculate absolute document depth
-                depth = 0
-                p = parent
-                while isinstance(p, nodes.section):
-                    depth += 1
-                    p = p.parent
-                    
-                if toplevel == 'part':
-                    if depth == 1: sec_type = 'part'
-                    elif depth == 2: sec_type = 'chapter'
-                else:
-                    if depth == 1: sec_type = 'chapter'
-        
         attr = None
         for child in node:
             if isinstance(child, nodes.attribution):
@@ -327,9 +329,11 @@ def process_epigraph_ast(app, doctree, docname):
         
         wrapper = nodes.container(classes=['docdash-dictum'])
         
-        # If it is a structural preamble, inject the KOMA preamble macro
+        # If it is a structural preamble, inject the KOMA preamble macro and setup the styling
         if is_preamble and sec_type in ('part', 'chapter'):
-            wrapper.append(nodes.raw('', f'\\set{sec_type}preamble[u]{{\n', format='latex'))
+            wrapper.append(nodes.raw('', f'\\set{sec_type}preamble[u]{{\n\\begingroup\n\\setupddepigraph{{{sec_type}}}\n', format='latex'))
+        else:
+            wrapper.append(nodes.raw('', f'\\begingroup\n\\setupddepigraph{{{sec_type}}}\n', format='latex'))
         
         # Construct the standard KOMA dictum
         if attr:
@@ -352,7 +356,7 @@ def process_epigraph_ast(app, doctree, docname):
         for child in node.children:
             wrapper.append(child)
             
-        wrapper.append(nodes.raw('', '}\n', format='latex'))
+        wrapper.append(nodes.raw('', '}\n\\endgroup\n', format='latex'))
         
         # Close the structural preamble if active, and perform AST Surgery to move it before the title
         if is_preamble and sec_type in ('part', 'chapter'):
@@ -418,13 +422,31 @@ def config_inited(app, config):
         }
 
         # --- EPIGRAPH / DICTUM LOGIC ---
+        align_map = {'left': r'\raggedright', 'right': r'\raggedleft', 'center': r'\centering'}
+        
+        # Base Global Epigraph
         template_vars['docdash_epigraph_width'] = getattr(config, 'docdash_epigraph_width', '0.5\\textwidth')
         template_vars['docdash_epigraph_format'] = getattr(config, 'docdash_epigraph_format', '--- #1')
-        
-        align_map = {'left': r'\raggedright', 'right': r'\raggedleft', 'center': r'\centering'}
         template_vars['docdash_epigraph_align_box'] = align_map.get(getattr(config, 'docdash_epigraph_align_box', 'right'), r'\raggedleft')
         template_vars['docdash_epigraph_align_text'] = align_map.get(getattr(config, 'docdash_epigraph_align_text', 'left'), r'\raggedright')
         template_vars['docdash_epigraph_align_author'] = align_map.get(getattr(config, 'docdash_epigraph_align_author', 'right'), r'\raggedleft')
+
+        # Hierarchical Epigraph Overrides
+        levels = ['part', 'chapter', 'section', 'subsection', 'subsubsection']
+        for idx, level in enumerate(levels):
+            for prop in ['width', 'format']:
+                val = getattr(config, f'docdash_{level}_epigraph_{prop}', None)
+                if val is None:
+                    val = template_vars.get(f'docdash_{levels[idx-1]}_epigraph_{prop}' if idx > 0 else f'docdash_epigraph_{prop}')
+                template_vars[f'docdash_{level}_epigraph_{prop}'] = val
+                
+            for prop in ['align_box', 'align_text', 'align_author']:
+                val = getattr(config, f'docdash_{level}_epigraph_{prop}', None)
+                if val is None:
+                    val_mapped = template_vars.get(f'docdash_{levels[idx-1]}_epigraph_{prop}' if idx > 0 else f'docdash_epigraph_{prop}')
+                else:
+                    val_mapped = align_map.get(val, r'\raggedleft' if prop != 'align_text' else r'\raggedright')
+                template_vars[f'docdash_{level}_epigraph_{prop}'] = val_mapped
 
         # --- CONTAINER CUSTOMIZATION LOGIC ---
         containers = getattr(config, 'docdash_containers', {})
@@ -533,7 +555,9 @@ def config_inited(app, config):
                 processed_part_bgs[p_num_int] = {
                     'image': img,
                     'color_cmyk': cmyk,
-                    'opacity': opacity
+                    'opacity': opacity,
+                    'epigraph_color_cmyk': hex_to_cmyk_string(p_conf.get('epigraph_color', None)),
+                    'epigraph_author_color_cmyk': hex_to_cmyk_string(p_conf.get('epigraph_author_color', None)),
                 }
         template_vars['docdash_part_backgrounds'] = processed_part_bgs
 
@@ -599,7 +623,12 @@ def config_inited(app, config):
             'part_number', 'part_number_part', 'part_number_number', 
             'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number',
             'chapter_line', 'section_line', 'subsection_line', 'subsubsection_line',
-            'epigraph', 'epigraph_author'
+            'epigraph', 'epigraph_author',
+            'part_epigraph', 'part_epigraph_author',
+            'chapter_epigraph', 'chapter_epigraph_author',
+            'section_epigraph', 'section_epigraph_author',
+            'subsection_epigraph', 'subsection_epigraph_author',
+            'subsubsection_epigraph', 'subsubsection_epigraph_author'
         ]
         for el in elements:
             template_vars[f'docdash_{el}_font'] = getattr(config, f'docdash_{el}_font', None)
@@ -610,7 +639,9 @@ def config_inited(app, config):
             hierarchies = [
                 ['part', 'chapter', 'section', 'subsection', 'subsubsection'],
                 ['part_number', 'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number'],
-                ['chapter_line', 'section_line', 'subsection_line', 'subsubsection_line']
+                ['chapter_line', 'section_line', 'subsection_line', 'subsubsection_line'],
+                ['epigraph', 'part_epigraph', 'chapter_epigraph', 'section_epigraph', 'subsection_epigraph', 'subsubsection_epigraph'],
+                ['epigraph_author', 'part_epigraph_author', 'chapter_epigraph_author', 'section_epigraph_author', 'subsection_epigraph_author', 'subsubsection_epigraph_author']
             ]
             properties = [
                 ('font', getattr(config, 'docdash_inherit_font', True)),
@@ -1008,6 +1039,14 @@ def setup(app):
     app.add_config_value('docdash_draft_font_size', r'\Huge\bfseries\sffamily', 'env')
     
     # Epigraph / Dictum variables
+    levels = ['epigraph', 'part_epigraph', 'chapter_epigraph', 'section_epigraph', 'subsection_epigraph', 'subsubsection_epigraph']
+    for l in levels:
+        app.add_config_value(f'docdash_{l}_width', None, 'env')
+        app.add_config_value(f'docdash_{l}_format', None, 'env')
+        app.add_config_value(f'docdash_{l}_align_box', None, 'env')
+        app.add_config_value(f'docdash_{l}_align_text', None, 'env')
+        app.add_config_value(f'docdash_{l}_align_author', None, 'env')
+        
     app.add_config_value('docdash_epigraph_width', '0.5\\textwidth', 'env')
     app.add_config_value('docdash_epigraph_format', '--- #1', 'env')
     app.add_config_value('docdash_epigraph_align_box', 'right', 'env')
@@ -1043,7 +1082,12 @@ def setup(app):
         'part_number', 'part_number_part', 'part_number_number', 
         'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number',
         'chapter_line', 'section_line', 'subsection_line', 'subsubsection_line',
-        'epigraph', 'epigraph_author'
+        'epigraph', 'epigraph_author',
+        'part_epigraph', 'part_epigraph_author',
+        'chapter_epigraph', 'chapter_epigraph_author',
+        'section_epigraph', 'section_epigraph_author',
+        'subsection_epigraph', 'subsection_epigraph_author',
+        'subsubsection_epigraph', 'subsubsection_epigraph_author'
     ]
 
     for el in elements:
