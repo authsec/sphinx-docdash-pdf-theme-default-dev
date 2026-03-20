@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.124"
+__version__ = "0.1.125"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -279,9 +279,14 @@ def process_containers_ast(app, doctree, docname):
         node.replace_self(wrapper)
 
 def process_epigraph_ast(app, doctree, docname):
-    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros."""
+    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, handling part/chapter preambles."""
     if getattr(app.builder, 'format', '') != 'latex':
         return
+        
+    toplevel = getattr(app.config, 'latex_toplevel_sectioning', None)
+    if not toplevel:
+        docclass = app.config.latex_docclass.get('manual', 'scrbook')
+        toplevel = 'chapter' if docclass in ('scrbook', 'book', 'report') else 'section'
         
     for node in list(doctree.traverse(nodes.block_quote)):
         if 'epigraph' not in node.get('classes', []):
@@ -289,6 +294,30 @@ def process_epigraph_ast(app, doctree, docname):
         if node.get('docdash_processed'):
             continue
         node['docdash_processed'] = True
+        
+        parent = node.parent
+        is_preamble = False
+        sec_type = None
+        idx = -1
+        
+        # Check if the epigraph is the FIRST element immediately following a structural heading
+        if isinstance(parent, nodes.section):
+            idx = parent.children.index(node)
+            if idx > 0 and isinstance(parent.children[idx-1], nodes.title):
+                is_preamble = True
+                
+                # Calculate absolute document depth
+                depth = 0
+                p = parent
+                while isinstance(p, nodes.section):
+                    depth += 1
+                    p = p.parent
+                    
+                if toplevel == 'part':
+                    if depth == 1: sec_type = 'part'
+                    elif depth == 2: sec_type = 'chapter'
+                else:
+                    if depth == 1: sec_type = 'chapter'
         
         attr = None
         for child in node:
@@ -298,6 +327,11 @@ def process_epigraph_ast(app, doctree, docname):
         
         wrapper = nodes.container(classes=['docdash-dictum'])
         
+        # If it is a structural preamble, inject the KOMA preamble macro
+        if is_preamble and sec_type in ('part', 'chapter'):
+            wrapper.append(nodes.raw('', f'\\set{sec_type}preamble[u]{{\n', format='latex'))
+        
+        # Construct the standard KOMA dictum
         if attr:
             node.remove(attr)
             wrapper.append(nodes.raw('', '\\dictum[{', format='latex'))
@@ -319,7 +353,14 @@ def process_epigraph_ast(app, doctree, docname):
             wrapper.append(child)
             
         wrapper.append(nodes.raw('', '}\n', format='latex'))
-        node.replace_self(wrapper)
+        
+        # Close the structural preamble if active, and perform AST Surgery to move it before the title
+        if is_preamble and sec_type in ('part', 'chapter'):
+            wrapper.append(nodes.raw('', '}\n', format='latex'))
+            parent.remove(node)
+            parent.insert(idx - 1, wrapper)
+        else:
+            node.replace_self(wrapper)
 
 def config_inited(app, config):
     """Fired when Sphinx finishes reading conf.py."""
