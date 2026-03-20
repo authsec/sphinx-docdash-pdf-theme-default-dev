@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.131"
+__version__ = "0.1.132"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -279,7 +279,7 @@ def process_containers_ast(app, doctree, docname):
         node.replace_self(wrapper)
 
 def process_epigraph_ast(app, doctree, docname):
-    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, handling part/chapter preambles."""
+    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, dynamically determining level."""
     if getattr(app.builder, 'format', '') != 'latex':
         return
         
@@ -365,6 +365,114 @@ def process_epigraph_ast(app, doctree, docname):
             parent.insert(idx - 1, wrapper)
         else:
             node.replace_self(wrapper)
+
+def process_needs_ast(app, doctree, docname):
+    """Invincible AST Flattener for Sphinx Needs to ensure tcolorbox rendering."""
+    if getattr(app.builder, 'format', '') != 'latex':
+        return
+        
+    for node in list(doctree.traverse(nodes.Element)):
+        classes = node.get('classes', [])
+        if 'need' not in classes and 'need_node' not in classes and node.tagname != 'need':
+            continue
+            
+        if node.get('docdash_processed'):
+            continue
+        for child in node.traverse(nodes.Element):
+            child['docdash_processed'] = True
+
+        # Extract the exact primary Needs ID
+        node_ids = node.attributes.get('ids', [])
+        nid = node_ids[0] if node_ids else None
+        if not nid:
+            for child in node.traverse(nodes.target):
+                if child.get('ids'):
+                    nid = child['ids'][0]
+                    break
+        if not nid:
+            continue
+
+        # CRITICAL FIX: Extract ALL IDs from every single element inside the need node
+        # before we destroy it, so no hyperref anchors are lost!
+        all_ids = []
+        for n in node.traverse(nodes.Element):
+            if 'ids' in n.attributes:
+                all_ids.extend(n.attributes['ids'])
+                
+        # Remove duplicates while preserving order
+        unique_ids = list(dict.fromkeys(all_ids))
+        
+        # Sphinx-Needs internally maps cross-references to the "needs:" namespace,
+        # so we forcefully ensure it exists as a fallback anchor.
+        if nid and f"needs:{nid}" not in unique_ids:
+            unique_ids.append(f"needs:{nid}")
+
+        title = ''
+        if hasattr(app.env, 'needs_all_needs') and nid in app.env.needs_all_needs:
+            title = app.env.needs_all_needs[nid].get('title', '')
+
+        # SANITIZER to absolutely nuke any possibility of a pgfkeys runaway paragraph
+        def esc(s):
+            if not s: return ''
+            return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
+
+        safe_nid = esc(nid)
+        safe_title = esc(title)
+        title_str = f"{safe_nid}: {safe_title}" if safe_title else safe_nid
+        
+        labels_tex = "".join([f"\\phantomsection\\label{{\\detokenize{{{i}}}}}" for i in unique_ids])
+
+        # Construct the new raw LaTeX wrapped tree
+        wrapper = nodes.container(classes=['docdash-flat-need'])
+        wrapper.append(nodes.raw('', f'\n{labels_tex}\n\\begin{{docdashneedbox}}{{{title_str}}}\n', format='latex'))
+
+        metadata_table = next(iter(node.traverse(nodes.table)), None)
+        
+        # Flawless Table Demolition and Content Extraction
+        if metadata_table:
+            rows = list(metadata_table.traverse(nodes.row))
+            if len(rows) > 0:
+                # In Sphinx-Needs, Row 0 is the Header. Row -1 is ALWAYS the Content.
+                # Everything in between is the structural metadata.
+                meta_rows = rows[1:-1] if len(rows) > 2 else []
+                content_row = rows[-1] if len(rows) > 1 else None
+
+                # 1. Process Metadata
+                for row in meta_rows:
+                    entries = list(row.traverse(nodes.entry))
+                    if len(entries) >= 2:
+                        p = nodes.paragraph()
+                        p.append(nodes.raw('', r'\needsmetakey{', format='latex'))
+                        p.extend(entries[0].children)
+                        p.append(nodes.raw('', r'} ', format='latex'))
+                        p.extend(entries[1].children)
+                        wrapper.append(p)
+                    else:
+                        for entry in entries:
+                            # CRITICAL FIX: Intercept the hidden needs_label tag in single-column layouts
+                            for inline_node in list(entry.traverse(nodes.inline)):
+                                if 'needs_label' in inline_node.get('classes', []):
+                                    wrap = nodes.inline()
+                                    wrap.append(nodes.raw('', r'\needsmetakey{', format='latex'))
+                                    wrap.extend(inline_node.children)
+                                    wrap.append(nodes.raw('', r'}', format='latex'))
+                                    inline_node.replace_self(wrap)
+                                    
+                            p = nodes.paragraph()
+                            p.extend(entry.children)
+                            wrapper.append(p)
+
+                # 2. Trigger lower box color and process Content!
+                if content_row:
+                    wrapper.append(nodes.raw('', '\n\\tcblower\n', format='latex'))
+                    for entry in content_row.traverse(nodes.entry):
+                        wrapper.extend(entry.children)
+
+        wrapper.append(nodes.raw('', '\n\\end{docdashneedbox}\n', format='latex'))
+        
+        # Demolish the original table and replace it with our flat structure
+        node.replace_self(wrapper)
+
 
 def config_inited(app, config):
     """Fired when Sphinx finishes reading conf.py. Translates dict configs to flat Jinja variables."""
