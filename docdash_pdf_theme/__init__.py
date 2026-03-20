@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.128"
+__version__ = "0.1.129"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -564,6 +564,10 @@ def config_inited(app, config):
                     'opacity': opacity,
                     'epigraph_color_cmyk': hex_to_cmyk_string(p_conf.get('epigraph_color', None)),
                     'epigraph_author_color_cmyk': hex_to_cmyk_string(p_conf.get('epigraph_author_color', None)),
+                    'font_color_cmyk': hex_to_cmyk_string(p_conf.get('font_color', None)),
+                    'number_color_cmyk': hex_to_cmyk_string(p_conf.get('number_color', None)),
+                    'number_part_color_cmyk': hex_to_cmyk_string(p_conf.get('number_part_color', None)),
+                    'number_number_color_cmyk': hex_to_cmyk_string(p_conf.get('number_number_color', None)),
                 }
         template_vars['docdash_part_backgrounds'] = processed_part_bgs
 
