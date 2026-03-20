@@ -39,6 +39,13 @@
 }
 <% endif %>
 
+%%% Epigraph / Dictum Configuration
+\renewcommand*{\dictumwidth}{<< docdash_epigraph_width >>}
+\renewcommand*{\dictumauthorformat}[1]{<< docdash_epigraph_format >>}
+\renewcommand*{\raggeddictum}{<< docdash_epigraph_align_box >>}
+\renewcommand*{\raggeddictumtext}{<< docdash_epigraph_align_text >>}
+\renewcommand*{\raggeddictumauthor}{<< docdash_epigraph_align_author >>}
+
 %%% Style chapters
 
 %% Remove the first horizontal rule (top line) from the title page
@@ -124,6 +131,8 @@
 <% if docdash_subsection_color %>\definecolor{ddsubsectioncolor}{cmyk}{<< docdash_subsection_color >>}<% endif %>
 <% if docdash_subsubsection_color %>\definecolor{ddsubsubsectioncolor}{cmyk}{<< docdash_subsubsection_color >>}<% endif %>
 <% if docdash_rubric_color %>\definecolor{ddrubriccolor}{cmyk}{<< docdash_rubric_color >>}<% endif %>
+<% if docdash_epigraph_color %>\definecolor{ddepigraphcolor}{cmyk}{<< docdash_epigraph_color >>}<% endif %>
+<% if docdash_epigraph_author_color %>\definecolor{ddepigraphauthorcolor}{cmyk}{<< docdash_epigraph_author_color >>}<% endif %>
 
 %% Define the Number Line / Structure Colors
 <% if docdash_part_number_color %>\definecolor{ddpartnumbercolor}{cmyk}{<< docdash_part_number_color >>}<% endif %>
@@ -225,6 +234,14 @@
 \newkomafont{subsubsectionnumber}{}
 <% if docdash_subsubsection_number_font or docdash_subsubsection_number_color or docdash_subsubsection_number_size %>
 \addtokomafont{subsubsectionnumber}{<% if docdash_subsubsection_number_color %>\color{ddsubsubsectionnumbercolor}<% endif %><% if docdash_subsubsection_number_size %><< docdash_subsubsection_number_size >><% endif %><% if docdash_subsubsection_number_font %>\fontspec{<< docdash_subsubsection_number_font >>}<% endif %>}
+<% endif %>
+
+<% if docdash_epigraph_font or docdash_epigraph_color or docdash_epigraph_size %>
+\addtokomafont{dictumtext}{<% if docdash_epigraph_color %>\color{ddepigraphcolor}<% endif %><% if docdash_epigraph_size %><< docdash_epigraph_size >><% endif %><% if docdash_epigraph_font %>\fontspec{<< docdash_epigraph_font >>}<% endif %>}
+<% endif %>
+
+<% if docdash_epigraph_author_font or docdash_epigraph_author_color or docdash_epigraph_author_size %>
+\addtokomafont{dictumauthor}{<% if docdash_epigraph_author_color %>\color{ddepigraphauthorcolor}<% endif %><% if docdash_epigraph_author_size %><< docdash_epigraph_author_size >><% endif %><% if docdash_epigraph_author_font %>\fontspec{<< docdash_epigraph_author_font >>}<% endif %>}
 <% endif %>
 
 %% Failsafe for lower KOMA hooks to prevent crash if undefined

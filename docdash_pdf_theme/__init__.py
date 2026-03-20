@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.122"
+__version__ = "0.1.123"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -278,6 +278,47 @@ def process_containers_ast(app, doctree, docname):
 
         node.replace_self(wrapper)
 
+def process_epigraph_ast(app, doctree, docname):
+    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros."""
+    if getattr(app.builder, 'format', '') != 'latex':
+        return
+        
+    for node in list(doctree.traverse(nodes.epigraph)):
+        if node.get('docdash_processed'):
+            continue
+        node['docdash_processed'] = True
+        
+        attr = None
+        for child in node:
+            if isinstance(child, nodes.attribution):
+                attr = child
+                break
+        
+        wrapper = nodes.container(classes=['docdash-dictum'])
+        
+        if attr:
+            node.remove(attr)
+            wrapper.append(nodes.raw('', '\\dictum[{', format='latex'))
+            
+            # Unwrap paragraph nodes in attribution so KOMA doesn't crash on \par
+            for child in attr.children:
+                if isinstance(child, nodes.paragraph):
+                    for gc in child.children:
+                        wrapper.append(gc)
+                else:
+                    wrapper.append(child)
+                    
+            wrapper.append(nodes.raw('', '}]{', format='latex'))
+        else:
+            wrapper.append(nodes.raw('', '\\dictum{', format='latex'))
+        
+        # Add the remaining quote text
+        for child in node.children:
+            wrapper.append(child)
+            
+        wrapper.append(nodes.raw('', '}\n', format='latex'))
+        node.replace_self(wrapper)
+
 def config_inited(app, config):
     """Fired when Sphinx finishes reading conf.py."""
     
@@ -332,6 +373,15 @@ def config_inited(app, config):
             'docdash_footheight': getattr(config, 'docdash_footheight', '25pt'),
             'extensions': getattr(config, 'extensions', [])
         }
+
+        # --- EPIGRAPH / DICTUM LOGIC ---
+        template_vars['docdash_epigraph_width'] = getattr(config, 'docdash_epigraph_width', '0.5\\textwidth')
+        template_vars['docdash_epigraph_format'] = getattr(config, 'docdash_epigraph_format', '--- #1')
+        
+        align_map = {'left': r'\raggedright', 'right': r'\raggedleft', 'center': r'\centering'}
+        template_vars['docdash_epigraph_align_box'] = align_map.get(getattr(config, 'docdash_epigraph_align_box', 'right'), r'\raggedleft')
+        template_vars['docdash_epigraph_align_text'] = align_map.get(getattr(config, 'docdash_epigraph_align_text', 'left'), r'\raggedright')
+        template_vars['docdash_epigraph_align_author'] = align_map.get(getattr(config, 'docdash_epigraph_align_author', 'right'), r'\raggedleft')
 
         # --- CONTAINER CUSTOMIZATION LOGIC ---
         containers = getattr(config, 'docdash_containers', {})
@@ -505,7 +555,8 @@ def config_inited(app, config):
             'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
             'part_number', 'part_number_part', 'part_number_number', 
             'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number',
-            'chapter_line', 'section_line', 'subsection_line', 'subsubsection_line'
+            'chapter_line', 'section_line', 'subsection_line', 'subsubsection_line',
+            'epigraph', 'epigraph_author'
         ]
         for el in elements:
             template_vars[f'docdash_{el}_font'] = getattr(config, f'docdash_{el}_font', None)
@@ -877,61 +928,6 @@ def process_needs_ast(app, doctree, docname):
         node.replace_self(wrapper)
 
 
-def process_containers_ast(app, doctree, docname):
-    """Safely extracts container classes and wraps them in custom LaTeX tcolorboxes."""
-    if getattr(app.builder, 'format', '') != 'latex':
-        return
-
-    containers_conf = getattr(app.config, 'docdash_containers', {})
-    if not containers_conf:
-        return
-
-    for node in list(doctree.traverse(nodes.container)):
-        if node.get('docdash_processed'):
-            continue
-
-        match_class = None
-        for c in node.get('classes', []):
-            if c in containers_conf:
-                match_class = c
-                break
-
-        if not match_class:
-            continue
-
-        node['docdash_processed'] = True
-
-        # Extract title preferentially from our robust custom directive
-        title = node.get('docdash_stylebox_title', None)
-        
-        # Fallback to the lowercased :name: option if they used standard containers
-        if title is None:
-            names = node.get('names', [])
-            title = names[0] if names else ""
-
-        def esc(s):
-            if not s: return ''
-            return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
-
-        safe_title = esc(title)
-
-        # Sanitize the class name to prevent LaTeX pgfkeys crash
-        safe_match_class = re.sub(r'[^a-zA-Z]', '', match_class)
-
-        # Conditionally apply the complex title styles only if a title actually exists
-        if safe_title:
-            icon_tex = f"\\csname ddconticon{safe_match_class}\\endcsname"
-            title_str = f"ddcontainertitlestyle{safe_match_class}, title={{{icon_tex} {safe_title}}}"
-        else:
-            title_str = "notitle"
-
-        wrapper = nodes.container(classes=['docdash-flat-container'])
-        wrapper.append(nodes.raw('', f'\n\\begin{{ddcontainer{safe_match_class}}}[{title_str}]\n', format='latex'))
-        wrapper.extend(node.children)
-        wrapper.append(nodes.raw('', f'\n\\end{{ddcontainer{safe_match_class}}}\n', format='latex'))
-
-        node.replace_self(wrapper)
-
 def setup(app):
     # --- SPHINX LATEX WRITER PATCH (ADMONITIONS) ---
     _orig_visit_admonition = LaTeXTranslator.visit_admonition
@@ -968,6 +964,13 @@ def setup(app):
     app.add_config_value('docdash_draft_font', None, 'env')
     app.add_config_value('docdash_draft_font_size', r'\Huge\bfseries\sffamily', 'env')
     
+    # Epigraph / Dictum variables
+    app.add_config_value('docdash_epigraph_width', '0.5\\textwidth', 'env')
+    app.add_config_value('docdash_epigraph_format', '--- #1', 'env')
+    app.add_config_value('docdash_epigraph_align_box', 'right', 'env')
+    app.add_config_value('docdash_epigraph_align_text', 'left', 'env')
+    app.add_config_value('docdash_epigraph_align_author', 'right', 'env')
+    
     # Alignment Toggles
     app.add_config_value('docdash_heading_align', 'alternate', 'env')
     app.add_config_value('docdash_heading_margin_space', '1.5em', 'env')
@@ -996,7 +999,8 @@ def setup(app):
         'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
         'part_number', 'part_number_part', 'part_number_number', 
         'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number',
-        'chapter_line', 'section_line', 'subsection_line', 'subsubsection_line'
+        'chapter_line', 'section_line', 'subsection_line', 'subsubsection_line',
+        'epigraph', 'epigraph_author'
     ]
 
     for el in elements:
@@ -1037,6 +1041,7 @@ def setup(app):
     
     # Run the AST Flattener securely at the very end of AST resolution
     app.connect('doctree-resolved', process_containers_ast, priority=998)
+    app.connect('doctree-resolved', process_epigraph_ast, priority=997)
     app.connect('doctree-resolved', process_needs_ast, priority=999)
     
     return {
