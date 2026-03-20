@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.132"
+__version__ = "0.1.133"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -472,7 +472,6 @@ def process_needs_ast(app, doctree, docname):
         
         # Demolish the original table and replace it with our flat structure
         node.replace_self(wrapper)
-
 
 def config_inited(app, config):
     """Fired when Sphinx finishes reading conf.py. Translates dict configs to flat Jinja variables."""
