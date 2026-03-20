@@ -69,8 +69,8 @@
 \newcommand{\setupddepigraph}[1]{%
   \csname ddepigraph@#1\endcsname
   \ifstr{#1}{part}{%
-    \edef\curpart{\the\numexpr\value{part}+1\relax}%
-    \csname ddepigraph@part@\curpart\endcsname
+    % Inside the preamble text, the part counter has already been incremented!
+    \csname ddepigraph@part@\the\value{part}\endcsname
   }{}%
 }
 \makeatother
@@ -119,7 +119,7 @@
 <% if docdash_part_backgrounds %>
 %% Pre-define colors to prevent pgfkeys errors
 <% for part_num, bg_conf in docdash_part_backgrounds.items() %>
-  <% if bg_conf.color_cmyk %>\definecolor{ddpartbg<< part_num >>}{cmyk}{<< bg_conf.color_cmyk >>}<% endif %>
+  <% if bg_conf.background_color_cmyk %>\definecolor{ddpartbg<< part_num >>}{cmyk}{<< bg_conf.background_color_cmyk >>}<% endif %>
   <% if bg_conf.font_color_cmyk %>\definecolor{ddpart<< part_num >>color}{cmyk}{<< bg_conf.font_color_cmyk >>}<% endif %>
   <% if bg_conf.number_color_cmyk %>\definecolor{ddpart<< part_num >>numbercolor}{cmyk}{<< bg_conf.number_color_cmyk >>}<% endif %>
   <% if bg_conf.number_part_color_cmyk %>\definecolor{ddpart<< part_num >>numberpartcolor}{cmyk}{<< bg_conf.number_part_color_cmyk >>}<% endif %>
@@ -155,7 +155,7 @@
       <% if bg_conf.image %>
       \node[inner sep=0pt, anchor=center] at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{<< bg_conf.image >>}};
       <% endif %>
-      <% if bg_conf.color_cmyk %>
+      <% if bg_conf.background_color_cmyk %>
       \fill[ddpartbg<< part_num >>, opacity=<< bg_conf.opacity >>] (current page.south west) rectangle (current page.north east);
       <% endif %>
     \fi
@@ -345,7 +345,7 @@
 \makeatother
 
 %% Force KOMA-Script to actively use the split partnumber elements for the "Part X" string.
-%% This MUST happen \AtBeginDocument so that Babel/Polyglossia language localizations don't overwrite it!
+%% This MUST happen \AtBeginDocument so that Babel/Polyglossia language localizations dont overwrite it!
 \makeatletter
 \AtBeginDocument{
   \@ifundefined{partformat}{}{%

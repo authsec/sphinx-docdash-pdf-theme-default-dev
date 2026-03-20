@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.129"
+__version__ = "0.1.130"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -545,7 +545,7 @@ def config_inited(app, config):
                         config.latex_additional_files.append(img)
                     img = os.path.basename(img)
                 
-                color_str = p_conf.get('color', None)
+                color_str = p_conf.get('background_color', p_conf.get('color', None))
                 cmyk = None
                 opacity = "1.0"
                 if color_str:
@@ -560,7 +560,7 @@ def config_inited(app, config):
                     
                 processed_part_bgs[p_num_int] = {
                     'image': img,
-                    'color_cmyk': cmyk,
+                    'background_color_cmyk': cmyk,
                     'opacity': opacity,
                     'epigraph_color_cmyk': hex_to_cmyk_string(p_conf.get('epigraph_color', None)),
                     'epigraph_author_color_cmyk': hex_to_cmyk_string(p_conf.get('epigraph_author_color', None)),
