@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.134"
+__version__ = "0.1.135"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -677,9 +677,17 @@ def config_inited(app, config):
                     'epigraph_color_cmyk': hex_to_cmyk_string(p_conf.get('epigraph_color', None)),
                     'epigraph_author_color_cmyk': hex_to_cmyk_string(p_conf.get('epigraph_author_color', None)),
                     'font_color_cmyk': hex_to_cmyk_string(p_conf.get('font_color', None)),
+                    'font': p_conf.get('font', None),
+                    'size': p_conf.get('size', None),
                     'number_color_cmyk': hex_to_cmyk_string(p_conf.get('number_color', None)),
+                    'number_font': p_conf.get('number_font', None),
+                    'number_size': p_conf.get('number_size', None),
                     'number_part_color_cmyk': hex_to_cmyk_string(p_conf.get('number_part_color', None)),
+                    'number_part_font': p_conf.get('number_part_font', None),
+                    'number_part_size': p_conf.get('number_part_size', None),
                     'number_number_color_cmyk': hex_to_cmyk_string(p_conf.get('number_number_color', None)),
+                    'number_number_font': p_conf.get('number_number_font', None),
+                    'number_number_size': p_conf.get('number_number_size', None),
                 }
         template_vars['docdash_part_backgrounds'] = processed_part_bgs
 

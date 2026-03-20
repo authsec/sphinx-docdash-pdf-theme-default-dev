@@ -127,25 +127,70 @@
 <% endfor %>
 <% endif %>
 
+%% Define the Global KOMA Hooks for Part Strings
+\newcommand{\ddpartcolorcmd}{<% if docdash_part_color %>\color{ddpartcolor}<% endif %>}
+\newcommand{\ddpartsizecmd}{<% if docdash_part_size %> << docdash_part_size >><% endif %>}
+\newcommand{\ddpartfontcmd}{<% if docdash_part_font %> \fontspec{<< docdash_part_font >>}<% endif %>}
+\addtokomafont{part}{\ddpartcolorcmd\ddpartsizecmd\ddpartfontcmd}
+
+\newcommand{\ddpartnumbercolorcmd}{<% if docdash_part_number_color %>\color{ddpartnumbercolor}<% endif %>}
+\newcommand{\ddpartnumbersizecmd}{<% if docdash_part_number_size %> << docdash_part_number_size >><% endif %>}
+\newcommand{\ddpartnumberfontcmd}{<% if docdash_part_number_font %> \fontspec{<< docdash_part_number_font >>}<% endif %>}
+\addtokomafont{partnumber}{\ddpartnumbercolorcmd\ddpartnumbersizecmd\ddpartnumberfontcmd}
+
+\newkomafont{partnumberpart}{}
+\newcommand{\ddpartnumberpartcolorcmd}{<% if docdash_part_number_part_color %>\color{ddpartnumberpartcolor}<% endif %>}
+\newcommand{\ddpartnumberpartsizecmd}{<% if docdash_part_number_part_size %> << docdash_part_number_part_size >><% endif %>}
+\newcommand{\ddpartnumberpartfontcmd}{<% if docdash_part_number_part_font %> \fontspec{<< docdash_part_number_part_font >>}<% endif %>}
+\addtokomafont{partnumberpart}{\ddpartnumberpartcolorcmd\ddpartnumberpartsizecmd\ddpartnumberpartfontcmd}
+
+\newkomafont{partnumbernumber}{}
+\newcommand{\ddpartnumbernumbercolorcmd}{<% if docdash_part_number_number_color %>\color{ddpartnumbernumbercolor}<% endif %>}
+\newcommand{\ddpartnumbernumbersizecmd}{<% if docdash_part_number_number_size %> << docdash_part_number_number_size >><% endif %>}
+\newcommand{\ddpartnumbernumberfontcmd}{<% if docdash_part_number_number_font %> \fontspec{<< docdash_part_number_number_font >>}<% endif %>}
+\addtokomafont{partnumbernumber}{\ddpartnumbernumbercolorcmd\ddpartnumbernumbersizecmd\ddpartnumbernumberfontcmd}
+
 \makeatletter
 \renewcommand*{\partheadstartvskip}{%
   \thispagestyle{empty}% Force removal of headers/footers on Part pages
   \edef\curpart{\the\numexpr\value{part}+1\relax}% Fix the off-by-one counter bug
   
-  % Reset dynamic part text colors to global defaults
+  % Reset dynamic part text variables to global defaults
   \renewcommand{\ddpartcolorcmd}{<% if docdash_part_color %>\color{ddpartcolor}<% endif %>}%
+  \renewcommand{\ddpartsizecmd}{<% if docdash_part_size %> << docdash_part_size >><% endif %>}%
+  \renewcommand{\ddpartfontcmd}{<% if docdash_part_font %> \fontspec{<< docdash_part_font >>}<% endif %>}%
+  
   \renewcommand{\ddpartnumbercolorcmd}{<% if docdash_part_number_color %>\color{ddpartnumbercolor}<% endif %>}%
+  \renewcommand{\ddpartnumbersizecmd}{<% if docdash_part_number_size %> << docdash_part_number_size >><% endif %>}%
+  \renewcommand{\ddpartnumberfontcmd}{<% if docdash_part_number_font %> \fontspec{<< docdash_part_number_font >>}<% endif %>}%
+  
   \renewcommand{\ddpartnumberpartcolorcmd}{<% if docdash_part_number_part_color %>\color{ddpartnumberpartcolor}<% endif %>}%
+  \renewcommand{\ddpartnumberpartsizecmd}{<% if docdash_part_number_part_size %> << docdash_part_number_part_size >><% endif %>}%
+  \renewcommand{\ddpartnumberpartfontcmd}{<% if docdash_part_number_part_font %> \fontspec{<< docdash_part_number_part_font >>}<% endif %>}%
+  
   \renewcommand{\ddpartnumbernumbercolorcmd}{<% if docdash_part_number_number_color %>\color{ddpartnumbernumbercolor}<% endif %>}%
+  \renewcommand{\ddpartnumbernumbersizecmd}{<% if docdash_part_number_number_size %> << docdash_part_number_number_size >><% endif %>}%
+  \renewcommand{\ddpartnumbernumberfontcmd}{<% if docdash_part_number_number_font %> \fontspec{<< docdash_part_number_number_font >>}<% endif %>}%
   
 <% if docdash_part_backgrounds %>
-  % Apply specific part text color overrides
+  % Apply specific part text property overrides
   <% for part_num, bg_conf in docdash_part_backgrounds.items() %>
   \ifnum\curpart=<< part_num >>\relax
     <% if bg_conf.font_color_cmyk %>\renewcommand{\ddpartcolorcmd}{\color{ddpart<< part_num >>color}}<% endif %>
+    <% if bg_conf.font %>\renewcommand{\ddpartfontcmd}{ \fontspec{<< bg_conf.font >>}}<% endif %>
+    <% if bg_conf.size %>\renewcommand{\ddpartsizecmd}{ << bg_conf.size >>}<% endif %>
+    
     <% if bg_conf.number_color_cmyk %>\renewcommand{\ddpartnumbercolorcmd}{\color{ddpart<< part_num >>numbercolor}}<% endif %>
+    <% if bg_conf.number_font %>\renewcommand{\ddpartnumberfontcmd}{ \fontspec{<< bg_conf.number_font >>}}<% endif %>
+    <% if bg_conf.number_size %>\renewcommand{\ddpartnumbersizecmd}{ << bg_conf.number_size >>}<% endif %>
+    
     <% if bg_conf.number_part_color_cmyk %>\renewcommand{\ddpartnumberpartcolorcmd}{\color{ddpart<< part_num >>numberpartcolor}}<% endif %>
+    <% if bg_conf.number_part_font %>\renewcommand{\ddpartnumberpartfontcmd}{ \fontspec{<< bg_conf.number_part_font >>}}<% endif %>
+    <% if bg_conf.number_part_size %>\renewcommand{\ddpartnumberpartsizecmd}{ << bg_conf.number_part_size >>}<% endif %>
+    
     <% if bg_conf.number_number_color_cmyk %>\renewcommand{\ddpartnumbernumbercolorcmd}{\color{ddpart<< part_num >>numbernumbercolor}}<% endif %>
+    <% if bg_conf.number_number_font %>\renewcommand{\ddpartnumbernumberfontcmd}{ \fontspec{<< bg_conf.number_number_font >>}}<% endif %>
+    <% if bg_conf.number_number_size %>\renewcommand{\ddpartnumbernumbersizecmd}{ << bg_conf.number_number_size >>}<% endif %>
   \fi
   <% endfor %>
 
@@ -225,9 +270,6 @@
 \addtokomafont{releaseversion}{<% if docdash_release_version_color %>\color{ddreleaseversioncolor}<% endif %><% if docdash_release_version_size %><< docdash_release_version_size >><% endif %><% if docdash_release_version_font %>\fontspec{<< docdash_release_version_font >>}<% endif %>}
 <% endif %>
 
-\newcommand{\ddpartcolorcmd}{<% if docdash_part_color %>\color{ddpartcolor}<% endif %>}
-\addtokomafont{part}{\ddpartcolorcmd<% if docdash_part_size %> << docdash_part_size >><% endif %><% if docdash_part_font %> \fontspec{<< docdash_part_font >>}<% endif %>}
-
 <% if docdash_chapter_font or docdash_chapter_color or docdash_chapter_size %>
 \addtokomafont{chapter}{<% if docdash_chapter_color %>\color{ddchaptercolor}<% endif %><% if docdash_chapter_size %><< docdash_chapter_size >><% endif %><% if docdash_chapter_font %>\fontspec{<< docdash_chapter_font >>}<% endif %>}
 <% endif %>
@@ -243,21 +285,6 @@
 <% if docdash_subsubsection_font or docdash_subsubsection_color or docdash_subsubsection_size %>
 \addtokomafont{subsubsection}{<% if docdash_subsubsection_color %>\color{ddsubsubsectioncolor}<% endif %><% if docdash_subsubsection_size %><< docdash_subsubsection_size >><% endif %><% if docdash_subsubsection_font %>\fontspec{<< docdash_subsubsection_number_font >>}<% endif %>}
 <% endif %>
-
-%% Custom Elements for Structural Numbers
-%% The native KOMA element for the entire "Part X" line is `partnumber`
-\newcommand{\ddpartnumbercolorcmd}{<% if docdash_part_number_color %>\color{ddpartnumbercolor}<% endif %>}
-\addtokomafont{partnumber}{\ddpartnumbercolorcmd<% if docdash_part_number_size %> << docdash_part_number_size >><% endif %><% if docdash_part_number_font %> \fontspec{<< docdash_part_number_font >>}<% endif %>}
-
-%% Custom sub-elements specifically to split the Part String
-\newkomafont{partnumberpart}{}
-\newcommand{\ddpartnumberpartcolorcmd}{<% if docdash_part_number_part_color %>\color{ddpartnumberpartcolor}<% endif %>}
-\addtokomafont{partnumberpart}{\ddpartnumberpartcolorcmd<% if docdash_part_number_part_size %> << docdash_part_number_part_size >><% endif %><% if docdash_part_number_part_font %> \fontspec{<< docdash_part_number_part_font >>}<% endif %>}
-
-\newkomafont{partnumbernumber}{}
-\newcommand{\ddpartnumbernumbercolorcmd}{<% if docdash_part_number_number_color %>\color{ddpartnumbernumbercolor}<% endif %>}
-\addtokomafont{partnumbernumber}{\ddpartnumbernumbercolorcmd<% if docdash_part_number_number_size %> << docdash_part_number_number_size >><% endif %><% if docdash_part_number_number_font %> \fontspec{<< docdash_part_number_number_font >>}<% endif %>}
-
 
 \newkomafont{chapternumber}{}
 <% if docdash_chapter_number_font or docdash_chapter_number_color or docdash_chapter_number_size %>
@@ -279,18 +306,9 @@
 \addtokomafont{subsubsectionnumber}{<% if docdash_subsubsection_number_color %>\color{ddsubsubsectionnumbercolor}<% endif %><% if docdash_subsubsection_number_size %><< docdash_subsubsection_number_size >><% endif %><% if docdash_subsubsection_number_font %>\fontspec{<< docdash_subsubsection_number_font >>}<% endif %>}
 <% endif %>
 
-<% if docdash_epigraph_font or docdash_epigraph_color or docdash_epigraph_size %>
-\addtokomafont{dictumtext}{<% if docdash_epigraph_color %>\color{ddepigraphcolor}<% endif %><% if docdash_epigraph_size %><< docdash_epigraph_size >><% endif %><% if docdash_epigraph_font %>\fontspec{<< docdash_epigraph_font >>}<% endif %>}
-<% endif %>
-
-<% if docdash_epigraph_author_font or docdash_epigraph_author_color or docdash_epigraph_author_size %>
-\addtokomafont{dictumauthor}{<% if docdash_epigraph_author_color %>\color{ddepigraphauthorcolor}<% endif %><% if docdash_epigraph_author_size %><< docdash_epigraph_author_size >><% endif %><% if docdash_epigraph_author_font %>\fontspec{<< docdash_epigraph_author_font >>}<% endif %>}
-<% endif %>
-
 %% Failsafe for lower KOMA hooks to prevent crash if undefined
 \newkomafont{paragraphnumber}{}
 \newkomafont{subparagraphnumber}{}
-
 
 %% Redefine Sphinx Rubric mapping to inject custom styling
 <% if docdash_rubric_font or docdash_rubric_color or docdash_rubric_size %>
@@ -353,7 +371,6 @@
   }
 }
 \makeatother
-
 
 %% ----------------------------------------------------
 %% DYNAMIC HEADING ALIGNMENT & MARGIN FORMATTING
