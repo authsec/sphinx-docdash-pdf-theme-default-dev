@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.133"
+__version__ = "0.1.134"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -527,6 +527,49 @@ def config_inited(app, config):
         admonitions = getattr(config, 'docdash_admonitions', {})
         needs = getattr(config, 'docdash_needs', {})
         containers = getattr(config, 'docdash_containers', {})
+
+        # --- CONTAINERS ---
+        safe_containers = {}
+        for c_name, c_conf in containers.items():
+            # Sanitize the class name for LaTeX variables
+            safe_name = re.sub(r'[^a-zA-Z]', '', c_name)
+            
+            title_color = c_conf.get('title_color', '#000000')
+            c_conf['title_color_cmyk'] = hex_to_cmyk_string(title_color)
+            
+            title_text_color = c_conf.get('title_font_color', get_highest_contrast_color(title_color, title_color, target='foreground'))
+            c_conf['title_font_color_cmyk'] = hex_to_cmyk_string(title_text_color)
+            
+            # Default icon color to the title text color if missing
+            icon_color = c_conf.get('title_icon_color', title_text_color)
+            c_conf['title_icon_color_cmyk'] = hex_to_cmyk_string(icon_color)
+            
+            c_conf['content_font_color_cmyk'] = hex_to_cmyk_string(c_conf.get('content_font_color', '#000000'))
+            c_conf['content_background_color_cmyk'] = hex_to_cmyk_string(c_conf.get('content_background_color', '#FFFFFF'))
+            c_conf.setdefault('title_font_size', r'\large\bfseries')
+            c_conf.setdefault('title_icon_font_size', '')
+            c_conf.setdefault('content_font_size', r'\normalsize')
+            c_conf.setdefault('title_style', 'classic')
+            
+            # Prevent string conversion bugs (e.g. "False" instead of False)
+            frame_val = c_conf.get('container_frame', True)
+            if isinstance(frame_val, str):
+                frame_val = frame_val.lower() not in ['false', '0', 'none', 'no']
+            c_conf['container_frame'] = frame_val
+            
+            # Extract boolean for text width alignment
+            match_val = c_conf.get('match_text_width', False)
+            if isinstance(match_val, str):
+                match_val = match_val.lower() not in ['false', '0', 'none', 'no']
+            c_conf['match_text_width'] = match_val
+            
+            c_conf.setdefault('title_icon', '')
+            c_conf.setdefault('title_font', '')
+            c_conf.setdefault('content_font', '')
+            
+            safe_containers[safe_name] = c_conf
+            
+        template_vars['docdash_containers'] = safe_containers
 
         # --- GLOBALS ---
         template_vars['docdash_show_release'] = getattr(config, 'docdash_show_release', True)
