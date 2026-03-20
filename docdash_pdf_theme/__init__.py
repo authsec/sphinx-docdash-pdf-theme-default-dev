@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.127"
+__version__ = "0.1.128"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -426,7 +426,11 @@ def config_inited(app, config):
         
         # Base Global Epigraph
         template_vars['docdash_epigraph_width'] = getattr(config, 'docdash_epigraph_width', '0.5\\textwidth')
-        template_vars['docdash_epigraph_format'] = getattr(config, 'docdash_epigraph_format', '--- #1')
+        
+        # Double the hash symbol so nested latex macro parsing doesn't crash on parameter tokens!
+        base_format = getattr(config, 'docdash_epigraph_format', '--- #1')
+        template_vars['docdash_epigraph_format'] = base_format.replace('#1', '##1')
+        
         template_vars['docdash_epigraph_align_box'] = align_map.get(getattr(config, 'docdash_epigraph_align_box', 'right'), r'\raggedleft')
         template_vars['docdash_epigraph_align_text'] = align_map.get(getattr(config, 'docdash_epigraph_align_text', 'left'), r'\raggedright')
         template_vars['docdash_epigraph_align_author'] = align_map.get(getattr(config, 'docdash_epigraph_align_author', 'right'), r'\raggedleft')
@@ -438,6 +442,8 @@ def config_inited(app, config):
                 val = getattr(config, f'docdash_{level}_epigraph_{prop}', None)
                 if val is None:
                     val = template_vars.get(f'docdash_{levels[idx-1]}_epigraph_{prop}' if idx > 0 else f'docdash_epigraph_{prop}')
+                elif prop == 'format':
+                    val = val.replace('#1', '##1')
                 template_vars[f'docdash_{level}_epigraph_{prop}'] = val
                 
             for prop in ['align_box', 'align_text', 'align_author']:
