@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.130"
+__version__ = "0.1.131"
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -367,7 +367,7 @@ def process_epigraph_ast(app, doctree, docname):
             node.replace_self(wrapper)
 
 def config_inited(app, config):
-    """Fired when Sphinx finishes reading conf.py."""
+    """Fired when Sphinx finishes reading conf.py. Translates dict configs to flat Jinja variables."""
     
     # 1. Smart default for latex_engine
     if config.latex_engine == 'pdflatex':
@@ -409,99 +409,64 @@ def config_inited(app, config):
         )
         template = env.from_string(template_content)
         
-        template_vars = {
-            'docdash_subtitle': getattr(config, 'docdash_subtitle', None),
-            'docdash_show_release': getattr(config, 'docdash_show_release', True),
-            'docdash_title_page_color': hex_to_cmyk_string(getattr(config, 'docdash_title_page_color', None)),
-            'docdash_title_page_top_line': getattr(config, 'docdash_title_page_top_line', False),
-            'docdash_headsep': getattr(config, 'docdash_headsep', '8mm'),
-            'docdash_footskip': getattr(config, 'docdash_footskip', '10mm'),
-            'docdash_headheight': getattr(config, 'docdash_headheight', '18pt'),
-            'docdash_footheight': getattr(config, 'docdash_footheight', '25pt'),
-            'extensions': getattr(config, 'extensions', [])
-        }
-
-        # --- EPIGRAPH / DICTUM LOGIC ---
-        align_map = {'left': r'\raggedright', 'right': r'\raggedleft', 'center': r'\centering'}
+        template_vars = {}
         
-        # Base Global Epigraph
-        template_vars['docdash_epigraph_width'] = getattr(config, 'docdash_epigraph_width', '0.5\\textwidth')
-        
-        # Double the hash symbol so nested latex macro parsing doesn't crash on parameter tokens!
-        base_format = getattr(config, 'docdash_epigraph_format', '--- #1')
-        template_vars['docdash_epigraph_format'] = base_format.replace('#1', '##1')
-        
-        template_vars['docdash_epigraph_align_box'] = align_map.get(getattr(config, 'docdash_epigraph_align_box', 'right'), r'\raggedleft')
-        template_vars['docdash_epigraph_align_text'] = align_map.get(getattr(config, 'docdash_epigraph_align_text', 'left'), r'\raggedright')
-        template_vars['docdash_epigraph_align_author'] = align_map.get(getattr(config, 'docdash_epigraph_align_author', 'right'), r'\raggedleft')
-
-        # Hierarchical Epigraph Overrides
-        levels = ['part', 'chapter', 'section', 'subsection', 'subsubsection']
-        for idx, level in enumerate(levels):
-            for prop in ['width', 'format']:
-                val = getattr(config, f'docdash_{level}_epigraph_{prop}', None)
-                if val is None:
-                    val = template_vars.get(f'docdash_{levels[idx-1]}_epigraph_{prop}' if idx > 0 else f'docdash_epigraph_{prop}')
-                elif prop == 'format':
-                    val = val.replace('#1', '##1')
-                template_vars[f'docdash_{level}_epigraph_{prop}'] = val
-                
-            for prop in ['align_box', 'align_text', 'align_author']:
-                val = getattr(config, f'docdash_{level}_epigraph_{prop}', None)
-                if val is None:
-                    val_mapped = template_vars.get(f'docdash_{levels[idx-1]}_epigraph_{prop}' if idx > 0 else f'docdash_epigraph_{prop}')
-                else:
-                    val_mapped = align_map.get(val, r'\raggedleft' if prop != 'align_text' else r'\raggedright')
-                template_vars[f'docdash_{level}_epigraph_{prop}'] = val_mapped
-
-        # --- CONTAINER CUSTOMIZATION LOGIC ---
+        # Pull dictionaries from Sphinx config
+        tp = getattr(config, 'docdash_title_page', {})
+        headings = getattr(config, 'docdash_headings', {})
+        parts = getattr(config, 'docdash_parts', {})
+        draft = getattr(config, 'docdash_draft', {})
+        epigraphs = getattr(config, 'docdash_epigraphs', {})
+        admonitions = getattr(config, 'docdash_admonitions', {})
+        needs = getattr(config, 'docdash_needs', {})
         containers = getattr(config, 'docdash_containers', {})
-        safe_containers = {}
-        for c_name, c_conf in containers.items():
-            # Sanitize the class name for LaTeX variables
-            safe_name = re.sub(r'[^a-zA-Z]', '', c_name)
-            
-            title_color = c_conf.get('title_color', '#000000')
-            c_conf['title_color_cmyk'] = hex_to_cmyk_string(title_color)
-            
-            title_text_color = c_conf.get('title_font_color', get_highest_contrast_color(title_color, title_color, target='foreground'))
-            c_conf['title_font_color_cmyk'] = hex_to_cmyk_string(title_text_color)
-            
-            # Default icon color to the title text color if missing
-            icon_color = c_conf.get('title_icon_color', title_text_color)
-            c_conf['title_icon_color_cmyk'] = hex_to_cmyk_string(icon_color)
-            
-            c_conf['content_font_color_cmyk'] = hex_to_cmyk_string(c_conf.get('content_font_color', '#000000'))
-            c_conf['content_background_color_cmyk'] = hex_to_cmyk_string(c_conf.get('content_background_color', '#FFFFFF'))
-            c_conf.setdefault('title_font_size', r'\large\bfseries')
-            c_conf.setdefault('title_icon_font_size', '')
-            c_conf.setdefault('content_font_size', r'\normalsize')
-            c_conf.setdefault('title_style', 'classic')
-            
-            # Prevent string conversion bugs (e.g. "False" instead of False)
-            frame_val = c_conf.get('container_frame', True)
-            if isinstance(frame_val, str):
-                frame_val = frame_val.lower() not in ['false', '0', 'none', 'no']
-            c_conf['container_frame'] = frame_val
-            
-            # Extract boolean for text width alignment
-            match_val = c_conf.get('match_text_width', False)
-            if isinstance(match_val, str):
-                match_val = match_val.lower() not in ['false', '0', 'none', 'no']
-            c_conf['match_text_width'] = match_val
-            
-            c_conf.setdefault('title_icon', '')
-            c_conf.setdefault('title_font', '')
-            c_conf.setdefault('content_font', '')
-            
-            safe_containers[safe_name] = c_conf
-            
-        template_vars['docdash_containers'] = safe_containers
 
-        # --- DRAFT TEXT LOGIC ---
-        draft_text = getattr(config, 'docdash_draft_text', None)
+        # --- GLOBALS ---
+        template_vars['docdash_show_release'] = getattr(config, 'docdash_show_release', True)
+        template_vars['docdash_headsep'] = getattr(config, 'docdash_headsep', '8mm')
+        template_vars['docdash_footskip'] = getattr(config, 'docdash_footskip', '10mm')
+        template_vars['docdash_headheight'] = getattr(config, 'docdash_headheight', '18pt')
+        template_vars['docdash_footheight'] = getattr(config, 'docdash_footheight', '25pt')
+        template_vars['extensions'] = getattr(config, 'extensions', [])
+
+        # Footer Logo
+        footer_logo = getattr(config, 'docdash_footer_logo', None)
+        if footer_logo and isinstance(footer_logo, str):
+            if footer_logo not in config.latex_additional_files:
+                config.latex_additional_files.append(footer_logo)
+            template_vars['docdash_footer_logo'] = os.path.basename(footer_logo)
+        else:
+            template_vars['docdash_footer_logo'] = None
+        template_vars['docdash_footer_logo_height'] = getattr(config, 'docdash_footer_logo_height', '1.5em')
+
+        # --- TITLE PAGE ---
+        template_vars['docdash_subtitle'] = tp.get('subtitle', None)
+        template_vars['docdash_title_page_color'] = hex_to_cmyk_string(tp.get('page_color', None))
+        template_vars['docdash_title_page_top_line'] = tp.get('top_line', False)
+        
+        title_bg = tp.get('background_image', None)
+        if title_bg and isinstance(title_bg, str):
+            if title_bg not in config.latex_additional_files:
+                config.latex_additional_files.append(title_bg)
+            template_vars['docdash_title_page_background_image'] = os.path.basename(title_bg)
+        else:
+            template_vars['docdash_title_page_background_image'] = None
+
+        opacity = tp.get('color_opacity', None)
+        if opacity is None:
+            opacity = '0.5' if template_vars['docdash_title_page_background_image'] else '1.0'
+        template_vars['docdash_title_page_color_opacity'] = opacity
+        
+        for el in ['title', 'subtitle', 'author', 'date', 'release_version']:
+            prefix = f'{el}_' if el != 'title' else ''
+            template_vars[f'docdash_{el}_font'] = tp.get(f'{prefix}font', None)
+            template_vars[f'docdash_{el}_size'] = tp.get(f'{prefix}size', None)
+            template_vars[f'docdash_{el}_color'] = hex_to_cmyk_string(tp.get(f'{prefix}color', None))
+
+        # --- DRAFT ---
+        draft_text = draft.get('text', None)
         if draft_text:
-            date_fmt = getattr(config, 'docdash_draft_date_format', '%Y-%m-%d %H:%M:%S')
+            date_fmt = draft.get('date_format', '%Y-%m-%d %H:%M:%S')
             formatted_date = datetime.now().strftime(date_fmt)
             ext_version = __version__
             proj_version = getattr(config, 'version', getattr(config, 'release', ''))
@@ -511,7 +476,7 @@ def config_inited(app, config):
             draft_text = draft_text.replace('{project_version}', proj_version)
             template_vars['docdash_draft_text'] = draft_text
             
-            draft_color_str = getattr(config, 'docdash_draft_color', '#00000044')
+            draft_color_str = draft.get('color', '#00000044')
             draft_opacity = "1.0"
             if draft_color_str:
                 clean_hex = draft_color_str.lstrip('#')
@@ -524,19 +489,16 @@ def config_inited(app, config):
                 template_vars['docdash_draft_color_cmyk'] = hex_to_cmyk_string(draft_color_str)
                 template_vars['docdash_draft_opacity'] = draft_opacity
 
-            template_vars['docdash_draft_font'] = getattr(config, 'docdash_draft_font', None)
-            template_vars['docdash_draft_font_size'] = getattr(config, 'docdash_draft_font_size', r'\Huge\bfseries\sffamily')
+            template_vars['docdash_draft_font'] = draft.get('font', None)
+            template_vars['docdash_draft_font_size'] = draft.get('font_size', r'\Huge\bfseries\sffamily')
         else:
             template_vars['docdash_draft_text'] = None
 
-        # --- PART BACKGROUNDS LOGIC ---
-        part_bgs = getattr(config, 'docdash_part_backgrounds', {})
+        # --- PARTS ---
         processed_part_bgs = {}
         if getattr(config, 'latex_toplevel_sectioning', '') == 'part':
-            for p_num, p_conf in part_bgs.items():
-                try:
-                    p_num_int = int(p_num)
-                except ValueError:
+            for p_num, p_conf in parts.items():
+                if not isinstance(p_num, int):
                     continue
                 
                 img = p_conf.get('image', None)
@@ -558,7 +520,7 @@ def config_inited(app, config):
                         color_str = f"#{clean_hex[:3]}"
                     cmyk = hex_to_cmyk_string(color_str)
                     
-                processed_part_bgs[p_num_int] = {
+                processed_part_bgs[p_num] = {
                     'image': img,
                     'background_color_cmyk': cmyk,
                     'opacity': opacity,
@@ -571,80 +533,85 @@ def config_inited(app, config):
                 }
         template_vars['docdash_part_backgrounds'] = processed_part_bgs
 
-        # Title Page Background Image Resolution
-        title_bg = getattr(config, 'docdash_title_page_background_image', None)
-        if title_bg and isinstance(title_bg, str):
-            if title_bg not in config.latex_additional_files:
-                config.latex_additional_files.append(title_bg)
-            template_vars['docdash_title_page_background_image'] = os.path.basename(title_bg)
-        else:
-            template_vars['docdash_title_page_background_image'] = None
+        # Global Part Fonts/Colors
+        for el in ['part', 'part_number', 'part_number_part', 'part_number_number']:
+            prefix = el.replace('part_', '') + '_' if el != 'part' else ''
+            template_vars[f'docdash_{el}_font'] = parts.get(f'{prefix}font', None)
+            template_vars[f'docdash_{el}_size'] = parts.get(f'{prefix}size', None)
+            template_vars[f'docdash_{el}_color'] = hex_to_cmyk_string(parts.get(f'{prefix}color', None))
 
-        # Title Page Tint Opacity
-        opacity = getattr(config, 'docdash_title_page_color_opacity', None)
-        if opacity is None:
-            # Default to 50% opacity if there is an image, otherwise fully opaque
-            opacity = '0.5' if template_vars['docdash_title_page_background_image'] else '1.0'
-        template_vars['docdash_title_page_color_opacity'] = opacity
-
-        # Footer Logo Resolution
-        footer_logo = getattr(config, 'docdash_footer_logo', None)
-        if footer_logo and isinstance(footer_logo, str):
-            if footer_logo not in config.latex_additional_files:
-                config.latex_additional_files.append(footer_logo)
-            template_vars['docdash_footer_logo'] = os.path.basename(footer_logo)
-        else:
-            template_vars['docdash_footer_logo'] = None
-            
-        template_vars['docdash_footer_logo_height'] = getattr(config, 'docdash_footer_logo_height', '1.5em')
-        
-        # --- HEADING ALIGNMENT & MARGIN RESOLUTION ---
-        global_align = getattr(config, 'docdash_heading_align', 'alternate')
-        if global_align not in ['left', 'right', 'alternate']:
-            global_align = 'alternate'
-            
-        for el in ['chapter', 'section', 'subsection', 'subsubsection']:
-            val = getattr(config, f'docdash_{el}_align', None)
-            if val not in ['left', 'right', 'alternate']:
-                val = global_align
-            template_vars[f'docdash_{el}_align'] = val
-
-        global_margin = getattr(config, 'docdash_numbers_in_margin', True)
-        global_margin_space = getattr(config, 'docdash_heading_margin_space', None) or '1.5em'
+        # --- HEADINGS ---
+        global_align = headings.get('align', 'alternate')
+        global_margin = headings.get('numbers_in_margin', True)
+        global_margin_space = headings.get('margin_space', '1.5em')
         
         for el in ['chapter', 'section', 'subsection', 'subsubsection']:
-            margin_val = getattr(config, f'docdash_{el}_number_margin', None)
-            template_vars[f'docdash_{el}_number_margin'] = margin_val if margin_val is not None else global_margin
+            el_dict = headings.get(el, {})
             
-            line_val = getattr(config, f'docdash_{el}_number_line', None)
-            default_line = True if el == 'chapter' else False
-            template_vars[f'docdash_{el}_number_line'] = line_val if line_val is not None else default_line
+            template_vars[f'docdash_{el}_align'] = el_dict.get('align', global_align)
+            template_vars[f'docdash_{el}_number_margin'] = el_dict.get('number_margin', global_margin)
+            template_vars[f'docdash_{el}_number_line'] = el_dict.get('number_line', True if el == 'chapter' else False)
+            template_vars[f'docdash_{el}_line_height'] = el_dict.get('line_height', '10cm')
+            template_vars[f'docdash_{el}_margin_space'] = el_dict.get('margin_space', global_margin_space)
             
-            height_val = getattr(config, f'docdash_{el}_line_height', None)
-            template_vars[f'docdash_{el}_line_height'] = height_val if height_val else '10cm'
+            template_vars[f'docdash_{el}_font'] = el_dict.get('font', None)
+            template_vars[f'docdash_{el}_size'] = el_dict.get('size', None)
+            template_vars[f'docdash_{el}_color'] = hex_to_cmyk_string(el_dict.get('color', None))
             
-            space_val = getattr(config, f'docdash_{el}_margin_space', None)
-            template_vars[f'docdash_{el}_margin_space'] = space_val if space_val else global_margin_space
+            template_vars[f'docdash_{el}_number_font'] = el_dict.get('number_font', None)
+            template_vars[f'docdash_{el}_number_size'] = el_dict.get('number_size', None)
+            template_vars[f'docdash_{el}_number_color'] = hex_to_cmyk_string(el_dict.get('number_color', None))
+            
+            template_vars[f'docdash_{el}_line_color'] = hex_to_cmyk_string(el_dict.get('line_color', None))
+
+        # --- EPIGRAPHS ---
+        align_map = {'left': r'\raggedright', 'right': r'\raggedleft', 'center': r'\centering'}
+        
+        template_vars['docdash_epigraph_width'] = epigraphs.get('width', '0.5\\textwidth')
+        base_format = epigraphs.get('format', '--- #1')
+        template_vars['docdash_epigraph_format'] = base_format.replace('#1', '##1')
+        
+        template_vars['docdash_epigraph_align_box'] = align_map.get(epigraphs.get('align_box', 'right'), r'\raggedleft')
+        template_vars['docdash_epigraph_align_text'] = align_map.get(epigraphs.get('align_text', 'left'), r'\raggedright')
+        template_vars['docdash_epigraph_align_author'] = align_map.get(epigraphs.get('align_author', 'right'), r'\raggedleft')
+
+        template_vars['docdash_epigraph_font'] = epigraphs.get('font', None)
+        template_vars['docdash_epigraph_size'] = epigraphs.get('size', None)
+        template_vars['docdash_epigraph_color'] = hex_to_cmyk_string(epigraphs.get('color', None))
+        
+        template_vars['docdash_epigraph_author_font'] = epigraphs.get('author_font', None)
+        template_vars['docdash_epigraph_author_size'] = epigraphs.get('author_size', None)
+        template_vars['docdash_epigraph_author_color'] = hex_to_cmyk_string(epigraphs.get('author_color', None))
+
+        levels = ['part', 'chapter', 'section', 'subsection', 'subsubsection']
+        for idx, level in enumerate(levels):
+            el_dict = epigraphs.get(level, {})
+            
+            for prop in ['width', 'format']:
+                val = el_dict.get(prop, None)
+                if val is None:
+                    val = template_vars.get(f'docdash_{levels[idx-1]}_epigraph_{prop}' if idx > 0 else f'docdash_epigraph_{prop}')
+                elif prop == 'format':
+                    val = val.replace('#1', '##1')
+                template_vars[f'docdash_{level}_epigraph_{prop}'] = val
+                
+            for prop in ['align_box', 'align_text', 'align_author']:
+                val = el_dict.get(prop, None)
+                if val is None:
+                    val_mapped = template_vars.get(f'docdash_{levels[idx-1]}_epigraph_{prop}' if idx > 0 else f'docdash_epigraph_{prop}')
+                else:
+                    val_mapped = align_map.get(val, r'\raggedleft' if prop != 'align_text' else r'\raggedright')
+                template_vars[f'docdash_{level}_epigraph_{prop}'] = val_mapped
+                
+            for prop in ['font', 'size', 'color', 'author_font', 'author_size', 'author_color']:
+                val = el_dict.get(prop, None)
+                if val is None:
+                    val = template_vars.get(f'docdash_{levels[idx-1]}_epigraph_{prop}' if idx > 0 else f'docdash_epigraph_{prop}')
+                elif 'color' in prop and val:
+                    val = hex_to_cmyk_string(val)
+                template_vars[f'docdash_{level}_epigraph_{prop}'] = val
 
         # --- TEXT INHERITANCE LOGIC ---
-        elements = [
-            'title', 'subtitle', 'author', 'date', 'release_version', 
-            'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
-            'part_number', 'part_number_part', 'part_number_number', 
-            'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number',
-            'chapter_line', 'section_line', 'subsection_line', 'subsubsection_line',
-            'epigraph', 'epigraph_author',
-            'part_epigraph', 'part_epigraph_author',
-            'chapter_epigraph', 'chapter_epigraph_author',
-            'section_epigraph', 'section_epigraph_author',
-            'subsection_epigraph', 'subsection_epigraph_author',
-            'subsubsection_epigraph', 'subsubsection_epigraph_author'
-        ]
-        for el in elements:
-            template_vars[f'docdash_{el}_font'] = getattr(config, f'docdash_{el}_font', None)
-            template_vars[f'docdash_{el}_size'] = getattr(config, f'docdash_{el}_size', None)
-            template_vars[f'docdash_{el}_color'] = hex_to_cmyk_string(getattr(config, f'docdash_{el}_color', None))
-
         if getattr(config, 'docdash_inherit_all', True):
             hierarchies = [
                 ['part', 'chapter', 'section', 'subsection', 'subsubsection'],
@@ -661,22 +628,22 @@ def config_inited(app, config):
             for hierarchy in hierarchies:
                 for prop, is_enabled in properties:
                     if is_enabled:
-                        current_val = template_vars[f'docdash_{hierarchy[0]}_{prop}']
+                        current_val = template_vars.get(f'docdash_{hierarchy[0]}_{prop}', None)
                         for i in range(1, len(hierarchy)):
                             level = hierarchy[i]
                             key = f'docdash_{level}_{prop}'
-                            if not template_vars[key]:
+                            if not template_vars.get(key):
                                 template_vars[key] = current_val
                             else:
                                 current_val = template_vars[key]
 
         for prop in ['font', 'color', 'size']:
-            if not template_vars[f'docdash_part_number_part_{prop}']:
-                template_vars[f'docdash_part_number_part_{prop}'] = template_vars[f'docdash_part_number_{prop}']
-            if not template_vars[f'docdash_part_number_number_{prop}']:
-                template_vars[f'docdash_part_number_number_{prop}'] = template_vars[f'docdash_part_number_{prop}']
+            if not template_vars.get(f'docdash_part_number_part_{prop}'):
+                template_vars[f'docdash_part_number_part_{prop}'] = template_vars.get(f'docdash_part_number_{prop}')
+            if not template_vars.get(f'docdash_part_number_number_{prop}'):
+                template_vars[f'docdash_part_number_number_{prop}'] = template_vars.get(f'docdash_part_number_{prop}')
 
-        # --- ADMONITION LOGIC ---
+        # --- ADMONITIONS ---
         generic_defaults = {
             'title_icon': r'\textbf{i}',
             'title_icon_color': '#FFFFFF',
@@ -708,8 +675,9 @@ def config_inited(app, config):
         ]
 
         for t in admon_types:
+            t_dict = admonitions.get(t, {})
             for p in admon_props:
-                val = getattr(config, f'docdash_admonition_{t}_{p}', None)
+                val = t_dict.get(p, None)
                 
                 # Resolve Fallbacks
                 if val is None:
@@ -731,88 +699,92 @@ def config_inited(app, config):
                 if p.endswith('_color') or p.endswith('_nested'):
                     template_vars[f'docdash_admonition_{t}_{p}_cmyk'] = hex_to_cmyk_string(val)
 
-        # --- SPHINX NEEDS LOGIC ---
-        if 'sphinx_needs' in getattr(config, 'extensions', []):
-            needs_props = [
-                'title_font', 'title_font_size', 'title_color', 'title_background_color',
-                'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_icon_raise_offset', 'title_vertical_position',
-                'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
-                'metadata_key_font', 'metadata_key_color', 'metadata_key_font_size',
-                'content_background_color', 'content_font', 'content_font_size', 'content_font_color',
-                'segmentation_style', 'segmentation_color',
-                'before_skip', 'after_skip'
-            ]
+        # Dynamic caution contrast fallback if missing
+        caution_bg = template_vars.get('docdash_admonition_caution_title_background_color')
+        caution_box_bg = template_vars.get('docdash_admonition_caution_title_icon_box_background_color')
+        if admonitions.get('caution', {}).get('title_icon_color') is None:
+            safe_icon_color = get_highest_contrast_color(caution_bg, caution_box_bg)
+            template_vars['docdash_admonition_caution_title_icon_color'] = safe_icon_color
+            template_vars['docdash_admonition_caution_title_icon_color_cmyk'] = hex_to_cmyk_string(safe_icon_color)
+
+        # --- SPHINX NEEDS ---
+        needs_props = [
+            'title_font', 'title_font_size', 'title_color', 'title_background_color',
+            'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_icon_raise_offset', 'title_vertical_position',
+            'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
+            'metadata_key_font', 'metadata_key_color', 'metadata_key_font_size',
+            'content_background_color', 'content_font', 'content_font_size', 'content_font_color',
+            'segmentation_style', 'segmentation_color',
+            'before_skip', 'after_skip'
+        ]
+        
+        needs_defaults = {
+            'title_font_size': r'\large\bfseries',
+            'title_color': '#FFFFFF',
+            'title_background_color': '#0092FA',
+            'title_icon': '',
+            'title_icon_size': '',
+            'title_icon_color': '#FFFFFF',
+            'title_icon_raise': '0pt',
+            'title_icon_raise_offset': '0pt',
+            'metadata_background_color': '#E9ECEF',
+            'metadata_font_size': r'\small',
+            'metadata_font_color': '#495057',
+            'metadata_key_color': '#212529',
+            'metadata_key_font_size': '',
+            'content_background_color': '#FFFFFF',
+            'content_font_size': r'\normalsize',
+            'content_font_color': '#000000',
+            'segmentation_style': 'solid',
+            'before_skip': '1.5em plus 0.5em minus 0.5em',
+            'after_skip': '1.5em plus 0.5em minus 0.5em'
+        }
+
+        for p in needs_props:
+            val = needs.get(p, None)
+            if val is None:
+                if p == 'segmentation_color':
+                    # Default segmentation color to title background color
+                    val = template_vars.get('docdash_needs_title_background_color', needs_defaults['title_background_color'])
+                else:
+                    val = needs_defaults.get(p, '')
             
-            needs_defaults = {
-                'title_font_size': r'\large\bfseries',
-                'title_color': '#FFFFFF',
-                'title_background_color': '#0092FA',
-                'title_icon': '',
-                'title_icon_size': '',
-                'title_icon_color': '#FFFFFF',
-                'title_icon_raise': '0pt',
-                'title_icon_raise_offset': '0pt',
-                'metadata_background_color': '#E9ECEF',
-                'metadata_font_size': r'\small',
-                'metadata_font_color': '#495057',
-                'metadata_key_color': '#212529',
-                'metadata_key_font_size': '',
-                'content_background_color': '#FFFFFF',
-                'content_font_size': r'\normalsize',
-                'content_font_color': '#000000',
-                'segmentation_style': 'solid',
-                'before_skip': '1.5em plus 0.5em minus 0.5em',
-                'after_skip': '1.5em plus 0.5em minus 0.5em'
-            }
-
-            for p in needs_props:
-                val = getattr(config, f'docdash_needs_{p}', None)
-                if val is None:
-                    if p == 'segmentation_color':
-                        # Default segmentation color to title background color
-                        val = template_vars.get('docdash_needs_title_background_color', needs_defaults['title_background_color'])
-                    else:
-                        val = needs_defaults.get(p, '')
-                
-                # Image Path Icon Detection
-                if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
-                    if val not in config.latex_additional_files:
-                        config.latex_additional_files.append(val)
-                    base_filename = os.path.basename(val)
-                    val = f"\\includegraphics[height=1em, keepaspectratio]{{{base_filename}}}"
-                
-                # Segmentation Line Handling for manual TikZ \draw injection
-                if p == 'segmentation_style':
-                    val_str = str(val).lower()
-                    if val_str in ['none', 'hidden', 'false', '0', '', 'empty']:
-                        val = 'draw=none'
-                    else:
-                        val = f"{val_str}, draw=ddneed@seglinefg, line width=0.5pt"
-
-                template_vars[f'docdash_needs_{p}'] = val
-                
-                # Pre-calculate CMYK for colors
-                if p.endswith('_color'):
-                    template_vars[f'docdash_needs_{p}_cmyk'] = hex_to_cmyk_string(val)
-
-            # Auto-calculate vertical position using robust total bounding box math
-            v_pos = getattr(config, 'docdash_needs_title_vertical_position', None)
-            manual_raise = getattr(config, 'docdash_needs_title_icon_raise', None)
-            offset = getattr(config, 'docdash_needs_title_icon_raise_offset', '0pt')
+            # Image Path Icon Detection
+            if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
+                if val not in config.latex_additional_files:
+                    config.latex_additional_files.append(val)
+                base_filename = os.path.basename(val)
+                val = f"\\includegraphics[height=1em, keepaspectratio]{{{base_filename}}}"
             
-            if not offset:
-                offset = '0pt'
+            # Segmentation Line Handling for manual TikZ \draw injection
+            if p == 'segmentation_style':
+                val_str = str(val).lower()
+                if val_str in ['none', 'hidden', 'false', '0', '', 'empty']:
+                    val = 'draw=none'
+                else:
+                    val = f"{val_str}, draw=ddneed@seglinefg, line width=0.5pt"
 
-            if v_pos == 'middle':
-                # Aligns the exact center of the icon with the exact cap-height of the font, plus manual offset
-                template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr 0.5\fontcharht\font`X - 0.5\height + {offset} \relax'
-            elif v_pos == 'top':
-                template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr 0.7em - \height + {offset} \relax'
-            elif v_pos == 'bottom':
-                template_vars['docdash_needs_title_icon_raise'] = offset
-            else:
-                base_raise = manual_raise if manual_raise is not None else '0pt'
-                template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr {base_raise} + {offset} \relax'
+            template_vars[f'docdash_needs_{p}'] = val
+            
+            # Pre-calculate CMYK for colors
+            if p.endswith('_color'):
+                template_vars[f'docdash_needs_{p}_cmyk'] = hex_to_cmyk_string(val)
+
+        # Auto-calculate vertical position using robust total bounding box math
+        v_pos = needs.get('title_vertical_position', None)
+        manual_raise = needs.get('title_icon_raise', None)
+        offset = needs.get('title_icon_raise_offset', '0pt')
+        if not offset: offset = '0pt'
+
+        if v_pos == 'middle':
+            template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr 0.5\fontcharht\font`X - 0.5\height + {offset} \relax'
+        elif v_pos == 'top':
+            template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr 0.7em - \height + {offset} \relax'
+        elif v_pos == 'bottom':
+            template_vars['docdash_needs_title_icon_raise'] = offset
+        else:
+            base_raise = manual_raise if manual_raise is not None else '0pt'
+            template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr {base_raise} + {offset} \relax'
 
         template_vars['v'] = template_vars
         my_preamble = template.render(**template_vars)
@@ -870,7 +842,7 @@ def config_inited(app, config):
             config.latex_elements['sphinxsetup'] = ', '.join(missing_setups)
     # ---------------------------------
 
-    # ALWAYS append our preamble so the `normal` pagestyle fix isn't lost
+    # ALWAYS append our preamble so the `normal` pagestyle fix isnt lost
     if 'preamble' in config.latex_elements:
         config.latex_elements['preamble'] += f"\n{my_preamble}"
     else:
@@ -904,114 +876,6 @@ def build_finished(app, exception):
     xmp_path.write_text(xmp_content, encoding='utf-8')
 
 
-def process_needs_ast(app, doctree, docname):
-    """Invincible AST Flattener for Sphinx Needs to ensure tcolorbox rendering."""
-    if getattr(app.builder, 'format', '') != 'latex':
-        return
-        
-    for node in list(doctree.traverse(nodes.Element)):
-        classes = node.get('classes', [])
-        if 'need' not in classes and 'need_node' not in classes and node.tagname != 'need':
-            continue
-            
-        if node.get('docdash_processed'):
-            continue
-        for child in node.traverse(nodes.Element):
-            child['docdash_processed'] = True
-
-        # Extract the exact primary Needs ID
-        node_ids = node.attributes.get('ids', [])
-        nid = node_ids[0] if node_ids else None
-        if not nid:
-            for child in node.traverse(nodes.target):
-                if child.get('ids'):
-                    nid = child['ids'][0]
-                    break
-        if not nid:
-            continue
-
-        # CRITICAL FIX: Extract ALL IDs from every single element inside the need node
-        # before we destroy it, so no hyperref anchors are lost!
-        all_ids = []
-        for n in node.traverse(nodes.Element):
-            if 'ids' in n.attributes:
-                all_ids.extend(n.attributes['ids'])
-                
-        # Remove duplicates while preserving order
-        unique_ids = list(dict.fromkeys(all_ids))
-        
-        # Sphinx-Needs internally maps cross-references to the "needs:" namespace,
-        # so we forcefully ensure it exists as a fallback anchor.
-        if nid and f"needs:{nid}" not in unique_ids:
-            unique_ids.append(f"needs:{nid}")
-
-        title = ''
-        if hasattr(app.env, 'needs_all_needs') and nid in app.env.needs_all_needs:
-            title = app.env.needs_all_needs[nid].get('title', '')
-
-        # SANITIZER to absolutely nuke any possibility of a pgfkeys runaway paragraph
-        def esc(s):
-            if not s: return ''
-            return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
-
-        safe_nid = esc(nid)
-        safe_title = esc(title)
-        title_str = f"{safe_nid}: {safe_title}" if safe_title else safe_nid
-        
-        labels_tex = "".join([f"\\phantomsection\\label{{\\detokenize{{{i}}}}}" for i in unique_ids])
-
-        # Construct the new raw LaTeX wrapped tree
-        wrapper = nodes.container(classes=['docdash-flat-need'])
-        wrapper.append(nodes.raw('', f'\n{labels_tex}\n\\begin{{docdashneedbox}}{{{title_str}}}\n', format='latex'))
-
-        metadata_table = next(iter(node.traverse(nodes.table)), None)
-        
-        # Flawless Table Demolition and Content Extraction
-        if metadata_table:
-            rows = list(metadata_table.traverse(nodes.row))
-            if len(rows) > 0:
-                # In Sphinx-Needs, Row 0 is the Header. Row -1 is ALWAYS the Content.
-                # Everything in between is the structural metadata.
-                meta_rows = rows[1:-1] if len(rows) > 2 else []
-                content_row = rows[-1] if len(rows) > 1 else None
-
-                # 1. Process Metadata
-                for row in meta_rows:
-                    entries = list(row.traverse(nodes.entry))
-                    if len(entries) >= 2:
-                        p = nodes.paragraph()
-                        p.append(nodes.raw('', r'\needsmetakey{', format='latex'))
-                        p.extend(entries[0].children)
-                        p.append(nodes.raw('', r'} ', format='latex'))
-                        p.extend(entries[1].children)
-                        wrapper.append(p)
-                    else:
-                        for entry in entries:
-                            # CRITICAL FIX: Intercept the hidden needs_label tag in single-column layouts
-                            for inline_node in list(entry.traverse(nodes.inline)):
-                                if 'needs_label' in inline_node.get('classes', []):
-                                    wrap = nodes.inline()
-                                    wrap.append(nodes.raw('', r'\needsmetakey{', format='latex'))
-                                    wrap.extend(inline_node.children)
-                                    wrap.append(nodes.raw('', r'}', format='latex'))
-                                    inline_node.replace_self(wrap)
-                                    
-                            p = nodes.paragraph()
-                            p.extend(entry.children)
-                            wrapper.append(p)
-
-                # 2. Trigger lower box color and process Content!
-                if content_row:
-                    wrapper.append(nodes.raw('', '\n\\tcblower\n', format='latex'))
-                    for entry in content_row.traverse(nodes.entry):
-                        wrapper.extend(entry.children)
-
-        wrapper.append(nodes.raw('', '\n\\end{docdashneedbox}\n', format='latex'))
-        
-        # Demolish the original table and replace it with our flat structure
-        node.replace_self(wrapper)
-
-
 def setup(app):
     # --- SPHINX LATEX WRITER PATCH (ADMONITIONS) ---
     _orig_visit_admonition = LaTeXTranslator.visit_admonition
@@ -1026,113 +890,35 @@ def setup(app):
 
     # General Theme Settings
     app.add_config_value('docdash_title_page_top_line', False, 'env')
-    app.add_config_value('docdash_title_page_background_image', None, 'env')
-    app.add_config_value('docdash_title_page_color_opacity', None, 'env')
     app.add_config_value('docdash_footer_logo', None, 'env')
     app.add_config_value('docdash_footer_logo_height', '1.5em', 'env')
     app.add_config_value('docdash_headsep', '8mm', 'env')
     app.add_config_value('docdash_footskip', '10mm', 'env')
     app.add_config_value('docdash_headheight', '18pt', 'env')
     app.add_config_value('docdash_footheight', '25pt', 'env')
-
-    # Toggles & Text
-    app.add_config_value('docdash_subtitle', None, 'env')
     app.add_config_value('docdash_show_release', True, 'env')
-    app.add_config_value('docdash_numbers_in_margin', True, 'env')
     
-    app.add_config_value('docdash_containers', {}, 'env')
-    app.add_config_value('docdash_part_backgrounds', {}, 'env')
-    app.add_config_value('docdash_draft_text', None, 'env')
-    app.add_config_value('docdash_draft_color', '#00000044', 'env')
-    app.add_config_value('docdash_draft_date_format', '%Y-%m-%d %H:%M:%S', 'env')
-    app.add_config_value('docdash_draft_font', None, 'env')
-    app.add_config_value('docdash_draft_font_size', r'\Huge\bfseries\sffamily', 'env')
+    # Core Base Fonts
+    app.add_config_value('docdash_main_font', 'Lato Light', 'env')
+    app.add_config_value('docdash_main_font_options', 'BoldFont={Lato Regular}, ItalicFont={Lato Light Italic}, BoldItalicFont={Lato Italic}', 'env')
+    app.add_config_value('docdash_sans_font', 'Exo 2', 'env')
+    app.add_config_value('docdash_mono_font', 'IosevkaTerm NF', 'env')
     
-    # Base Epigraph / Dictum variables
-    app.add_config_value('docdash_epigraph_width', '0.5\\textwidth', 'env')
-    app.add_config_value('docdash_epigraph_format', '--- #1', 'env')
-    app.add_config_value('docdash_epigraph_align_box', 'right', 'env')
-    app.add_config_value('docdash_epigraph_align_text', 'left', 'env')
-    app.add_config_value('docdash_epigraph_align_author', 'right', 'env')
-
-    # Hierarchical Epigraph Overrides
-    levels = ['part_epigraph', 'chapter_epigraph', 'section_epigraph', 'subsection_epigraph', 'subsubsection_epigraph']
-    for l in levels:
-        app.add_config_value(f'docdash_{l}_width', None, 'env')
-        app.add_config_value(f'docdash_{l}_format', None, 'env')
-        app.add_config_value(f'docdash_{l}_align_box', None, 'env')
-        app.add_config_value(f'docdash_{l}_align_text', None, 'env')
-        app.add_config_value(f'docdash_{l}_align_author', None, 'env')
-        
-    # Alignment Toggles
-    app.add_config_value('docdash_heading_align', 'alternate', 'env')
-    app.add_config_value('docdash_heading_margin_space', '1.5em', 'env')
-    for el in ['chapter', 'section', 'subsection', 'subsubsection']:
-        app.add_config_value(f'docdash_{el}_align', None, 'env')
-        app.add_config_value(f'docdash_{el}_number_margin', None, 'env')
-        app.add_config_value(f'docdash_{el}_number_line', None, 'env')
-        app.add_config_value(f'docdash_{el}_line_height', None, 'env')
-        app.add_config_value(f'docdash_{el}_margin_space', None, 'env')
-
     # Inheritance Toggles
     app.add_config_value('docdash_inherit_all', True, 'env')
     app.add_config_value('docdash_inherit_font', True, 'env')
     app.add_config_value('docdash_inherit_color', True, 'env')
     app.add_config_value('docdash_inherit_size', False, 'env')
 
-    # Core Base Fonts
-    app.add_config_value('docdash_main_font', 'Lato Light', 'env')
-    app.add_config_value('docdash_main_font_options', 'BoldFont={Lato Regular}, ItalicFont={Lato Light Italic}, BoldItalicFont={Lato Italic}', 'env')
-    app.add_config_value('docdash_sans_font', 'Exo 2', 'env')
-    app.add_config_value('docdash_mono_font', 'IosevkaTerm NF', 'env')
-
-    # Register Universal Element Customization Namespace
-    elements = [
-        'title_page', 'title', 'subtitle', 'author', 'date', 'release_version', 
-        'part', 'chapter', 'section', 'subsection', 'subsubsection', 'rubric',
-        'part_number', 'part_number_part', 'part_number_number', 
-        'chapter_number', 'section_number', 'subsection_number', 'subsubsection_number',
-        'chapter_line', 'section_line', 'subsection_line', 'subsubsection_line',
-        'epigraph', 'epigraph_author',
-        'part_epigraph', 'part_epigraph_author',
-        'chapter_epigraph', 'chapter_epigraph_author',
-        'section_epigraph', 'section_epigraph_author',
-        'subsection_epigraph', 'subsection_epigraph_author',
-        'subsubsection_epigraph', 'subsubsection_epigraph_author'
-    ]
-
-    for el in elements:
-        for attr in ['font', 'color', 'size']:
-            key = f'{el}_{attr}'
-            app.add_config_value(f'docdash_{key}', None, 'env')
-
-    # Admonition Customization Namespace
-    admon_types = ['generic', 'admonition', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention']
-    admon_props = [
-        'title_icon', 'title_icon_color', 'title_icon_size', 'title_icon_padding', 'title_decoration_spacing', 
-        'title_font', 'title_font_color', 'title_font_size', 
-        'title_background_color', 'title_icon_box_background_color', 
-        'content_background_color', 'content_background_color_nested', 
-        'content_font', 'content_font_color', 'content_font_size',
-        'before_skip', 'after_skip'
-    ]
-
-    for t in admon_types:
-        for p in admon_props:
-            app.add_config_value(f'docdash_admonition_{t}_{p}', None, 'env')
-
-    # Sphinx Needs Customization Namespace
-    needs_props = [
-        'title_font', 'title_font_size', 'title_color', 'title_background_color',
-        'title_icon', 'title_icon_size', 'title_icon_color', 'title_icon_raise', 'title_icon_raise_offset', 'title_vertical_position',
-        'metadata_background_color', 'metadata_font', 'metadata_font_size', 'metadata_font_color',
-        'metadata_key_font', 'metadata_key_color', 'metadata_key_font_size',
-        'content_background_color', 'content_font', 'content_font_size', 'content_font_color',
-        'segmentation_style', 'segmentation_color',
-        'before_skip', 'after_skip'
-    ]
-    for p in needs_props:
-        app.add_config_value(f'docdash_needs_{p}', None, 'env')
+    # Root Configuration Dictionaries
+    app.add_config_value('docdash_title_page', {}, 'env')
+    app.add_config_value('docdash_headings', {}, 'env')
+    app.add_config_value('docdash_parts', {}, 'env')
+    app.add_config_value('docdash_epigraphs', {}, 'env')
+    app.add_config_value('docdash_admonitions', {}, 'env')
+    app.add_config_value('docdash_needs', {}, 'env')
+    app.add_config_value('docdash_draft', {}, 'env')
+    app.add_config_value('docdash_containers', {}, 'env')
 
     app.connect('config-inited', config_inited, priority=900)
     app.connect('build-finished', build_finished)
