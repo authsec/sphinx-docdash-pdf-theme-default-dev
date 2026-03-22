@@ -18,15 +18,14 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.144"
+__version__ = "0.1.145"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 # This is the absolute last-resort fallback if a user requests a style that does not exist,
-# and the package's latex_styles/title_style folder is somehow missing.
+# and the package's latex_styles/container_title_style folder is somehow missing.
 DEFAULT_TITLE_STYLES = {
     'classic': r"attach boxed title to top left={xshift=0pt, yshift=0pt}, boxed title style={empty, left=1ex, right=0pt}"
 }
-
 
 class StyleBoxDirective(Directive):
     """Custom directive to safely parse container styles and preserve capitalized titles."""
@@ -788,10 +787,12 @@ def config_inited(app, config):
             base_raise = manual_raise if manual_raise is not None else '0pt'
             template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr {base_raise} + {offset} \relax'
 
+        template_vars['v'] = template_vars
+
         # --- TITLE STYLE RESOLUTION ENGINE ---
         loaded_title_styles = {}
         style_requires_arg = {}
-        custom_style_folder = getattr(config, 'docdash_title_style_path', '')
+        custom_style_folder = getattr(config, 'docdash_container_title_style_path', '')
         
         for style_name in requested_styles:
             paths_to_check = []
@@ -806,7 +807,7 @@ def config_inited(app, config):
             paths_to_check.append(Path(app.confdir) / f"{style_name}.tex")
             
             # 3. Theme Default Folder
-            paths_to_check.append(pkg_dir / "latex_styles" / "title_style" / f"{style_name}.tex_t")
+            paths_to_check.append(pkg_dir / "latex_styles" / "container_title_style" / f"{style_name}.tex_t")
             
             raw_content = None
             for p in paths_to_check:
@@ -840,7 +841,72 @@ def config_inited(app, config):
         template_vars['docdash_loaded_title_styles'] = loaded_title_styles
         template_vars['docdash_style_requires_arg'] = style_requires_arg
 
-        template_vars['v'] = template_vars
+        # --- TITLE PAGE RESOLUTION ENGINE ---
+        tp_style_name = tp.get('template', 'default')
+        tp_custom_folder = getattr(config, 'docdash_title_page_template_path', '')
+        
+        tp_paths_to_check = []
+        if tp_custom_folder:
+            tp_paths_to_check.append(Path(app.confdir) / tp_custom_folder / f"{tp_style_name}.tex_t")
+            tp_paths_to_check.append(Path(app.confdir) / tp_custom_folder / f"{tp_style_name}.tex")
+            
+        tp_paths_to_check.append(Path(app.confdir) / f"{tp_style_name}.tex_t")
+        tp_paths_to_check.append(Path(app.confdir) / f"{tp_style_name}.tex")
+        tp_paths_to_check.append(pkg_dir / "latex_styles" / "title_page" / f"{tp_style_name}.tex_t")
+        
+        tp_raw_content = None
+        for p in tp_paths_to_check:
+            if p.exists():
+                tp_raw_content = p.read_text(encoding='utf-8')
+                break
+                
+        if tp_raw_content is None:
+            logger.warning(f"[DocDash] Title page template '{tp_style_name}' not found. Falling back to internal default.")
+            # Hardcoded fallback just in case the file is missing from package entirely
+            tp_raw_content = r"""
+%% Remove the first horizontal rule (top line) from the title page
+\makeatletter
+<% if not docdash_title_page_top_line %>
+\xpatchcmd{\sphinxmaketitle}{\rule{\textwidth}{1pt}}{}{}{}
+<% endif %>
+\makeatother
+
+%% Define and apply the Title Page Background
+<% if docdash_title_page_background_image or docdash_title_page_color %>
+<% if docdash_title_page_color %>
+\definecolor{titlepagecolor}{cmyk}{<< docdash_title_page_color >>}
+<% endif %>
+\makeatletter
+\let\orig@sphinxmaketitle\sphinxmaketitle
+\renewcommand{\sphinxmaketitle}{%
+  \let\orig@titlepage\titlepage
+  \def\titlepage{%
+    \orig@titlepage
+    <% if docdash_title_page_background_image %>
+    \begin{tikzpicture}[remember picture, overlay]
+      % Render Full Page Image
+      \node[inner sep=0pt, anchor=center] at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{<< docdash_title_page_background_image >>}};
+      <% if docdash_title_page_color %>
+      % Render Color Tint Overlay
+      \fill[titlepagecolor, opacity=<< docdash_title_page_color_opacity >>] (current page.south west) rectangle (current page.north east);
+      <% endif %>
+    \end{tikzpicture}%
+    <% else %>
+    % No Image: Fall back to solid pagecolor
+    \pagecolor{titlepagecolor}%
+    \AddToHookNext{shipout/after}{\nopagecolor}%
+    <% endif %>
+  }%
+  \orig@sphinxmaketitle
+}
+\makeatother
+<% endif %>"""
+
+        # Render the custom title page through Jinja
+        # (We DO NOT flatten this output since it's going straight into the preamble!)
+        tp_template = env.from_string(tp_raw_content)
+        template_vars['docdash_rendered_title_page'] = tp_template.render(**template_vars)
+
         my_preamble = template.render(**template_vars)
     else:
         logger.warning("[DocDash PDF Theme] Could not find preamble.tex_t template.")
@@ -974,8 +1040,9 @@ def setup(app):
     app.add_config_value('docdash_draft', {}, 'env')
     app.add_config_value('docdash_containers', {}, 'env')
 
-    # Custom Folder Setting
-    app.add_config_value('docdash_title_style_path', '', 'env')
+    # Custom Folder Settings
+    app.add_config_value('docdash_container_title_style_path', '', 'env')
+    app.add_config_value('docdash_title_page_template_path', '', 'env')
 
     app.connect('config-inited', config_inited, priority=900)
     app.connect('build-finished', build_finished)

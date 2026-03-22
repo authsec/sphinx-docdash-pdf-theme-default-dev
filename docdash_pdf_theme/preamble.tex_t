@@ -75,45 +75,8 @@
 }
 \makeatother
 
-%%% Style chapters
-
-%% Remove the first horizontal rule (top line) from the title page
-\makeatletter
-<% if not docdash_title_page_top_line %>
-\xpatchcmd{\sphinxmaketitle}{\rule{\textwidth}{1pt}}{}{}{}
-<% endif %>
-\makeatother
-
-%% Define and apply the Title Page Background
-<% if docdash_title_page_background_image or docdash_title_page_color %>
-<% if docdash_title_page_color %>
-\definecolor{titlepagecolor}{cmyk}{<< docdash_title_page_color >>}
-<% endif %>
-\makeatletter
-\let\orig@sphinxmaketitle\sphinxmaketitle
-\renewcommand{\sphinxmaketitle}{%
-  \let\orig@titlepage\titlepage
-  \def\titlepage{%
-    \orig@titlepage
-    <% if docdash_title_page_background_image %>
-    \begin{tikzpicture}[remember picture, overlay]
-      % Render Full Page Image
-      \node[inner sep=0pt, anchor=center] at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{<< docdash_title_page_background_image >>}};
-      <% if docdash_title_page_color %>
-      % Render Color Tint Overlay
-      \fill[titlepagecolor, opacity=<< docdash_title_page_color_opacity >>] (current page.south west) rectangle (current page.north east);
-      <% endif %>
-    \end{tikzpicture}%
-    <% else %>
-    % No Image: Fall back to solid pagecolor
-    \pagecolor{titlepagecolor}%
-    \AddToHookNext{shipout/after}{\nopagecolor}%
-    <% endif %>
-  }%
-  \orig@sphinxmaketitle
-}
-\makeatother
-<% endif %>
+%%% Title Page Injection
+<< docdash_rendered_title_page >>
 
 %% Part Background Image/Color Injection
 <% if docdash_part_backgrounds %>
@@ -641,7 +604,7 @@
 
 \expandafter\def\csname ddconticon<< c_name >>\endcsname{<% if c_conf.title_icon %>{<< c_conf.title_icon_font_size >>\color{ddconticonfg<< c_name >>}<< c_conf.title_icon >>}\hspace{0.5em}<% endif %>}
 
-\tcbset{ddcontainerstyle<< c_name >>/.style={enhanced, breakable, parbox=false, before skip=1.5em plus 0.5em minus 0.5em, after skip=1.5em plus 0.5em minus 0.5em, colback=ddcontcontentbg<< c_name >>, coltext=ddcontcontentfg<< c_name >>, fontupper=<% if c_conf.content_font %>\fontspec{<< c_conf.content_font >>}<% endif %><< c_conf.content_font_size >>, <% if not c_conf.container_frame %>frame hidden, boxrule=0pt, <% else %>colframe=ddconttitlefg<< c_name >>!50!black, boxrule=1pt, <% endif %>boxsep=0.25em, left=0.5em, right=0.5em, <% if c_conf.match_text_width %>grow to left by=\dimexpr 0.75em+<% if c_conf.container_frame %>1pt<% else %>0pt<% endif %>\relax, grow to right by=\dimexpr 0.75em+<% if c_conf.container_frame %>1pt<% else %>0pt<% endif %>\relax, <% endif %>},ddcontainertitlestyle<< c_name >>/.style={fonttitle=<% if c_conf.title_font %>\fontspec{<< c_conf.title_font >>}<% endif %><< c_conf.title_font_size >>, coltitle=ddconttitletextfg<< c_name >>, colbacktitle=ddconttitlefg<< c_name >>, docdash<< c_conf.title_style >>style={ddconttitlefg<< c_name >>}}}
+\tcbset{ddcontainerstyle<< c_name >>/.style={enhanced, breakable, parbox=false, before skip=1.5em plus 0.5em minus 0.5em, after skip=1.5em plus 0.5em minus 0.5em, colback=ddcontcontentbg<< c_name >>, coltext=ddcontcontentfg<< c_name >>, fontupper=<% if c_conf.content_font %>\fontspec{<< c_conf.content_font >>}<% endif %><< c_conf.content_font_size >>, <% if not c_conf.container_frame %>frame hidden, boxrule=0pt, <% else %>colframe=ddconttitlefg<< c_name >>!50!black, boxrule=1pt, <% endif %>boxsep=0.25em, left=0.5em, right=0.5em, <% if c_conf.match_text_width %>grow to left by=\dimexpr 0.75em+<% if c_conf.container_frame %>1pt<% else %>0pt<% endif %>\relax, grow to right by=\dimexpr 0.75em+<% if c_conf.container_frame %>1pt<% else %>0pt<% endif %>\relax, <% endif %>},ddcontainertitlestyle<< c_name >>/.style={fonttitle=<% if c_conf.title_font %>\fontspec{<< c_conf.title_font >>}<% endif %><< c_conf.title_font_size >>, coltitle=ddconttitletextfg<< c_name >>, colbacktitle=ddconttitlefg<< c_name >>, docdash<< c_conf.title_style >>style<% if docdash_style_requires_arg[c_conf.title_style] %>={ddconttitlefg<< c_name >>}<% endif %>}}
 
 \newtcolorbox{ddcontainer<< c_name >>}[1][]{ddcontainerstyle<< c_name >>, #1}
 <% endfor %>

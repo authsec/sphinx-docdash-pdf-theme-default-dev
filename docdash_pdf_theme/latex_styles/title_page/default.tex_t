@@ -1,0 +1,37 @@
+%% Remove the first horizontal rule (top line) from the title page
+\makeatletter
+<% if not docdash_title_page_top_line %>
+\xpatchcmd{\sphinxmaketitle}{\rule{\textwidth}{1pt}}{}{}{}
+<% endif %>
+\makeatother
+
+%% Define and apply the Title Page Background
+<% if docdash_title_page_background_image or docdash_title_page_color %>
+<% if docdash_title_page_color %>
+\definecolor{titlepagecolor}{cmyk}{<< docdash_title_page_color >>}
+<% endif %>
+\makeatletter
+\let\orig@sphinxmaketitle\sphinxmaketitle
+\renewcommand{\sphinxmaketitle}{%
+  \let\orig@titlepage\titlepage
+  \def\titlepage{%
+    \orig@titlepage
+    <% if docdash_title_page_background_image %>
+    \begin{tikzpicture}[remember picture, overlay]
+      % Render Full Page Image
+      \node[inner sep=0pt, anchor=center] at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{<< docdash_title_page_background_image >>}};
+      <% if docdash_title_page_color %>
+      % Render Color Tint Overlay
+      \fill[titlepagecolor, opacity=<< docdash_title_page_color_opacity >>] (current page.south west) rectangle (current page.north east);
+      <% endif %>
+    \end{tikzpicture}%
+    <% else %>
+    % No Image: Fall back to solid pagecolor
+    \pagecolor{titlepagecolor}%
+    \AddToHookNext{shipout/after}{\nopagecolor}%
+    <% endif %>
+  }%
+  \orig@sphinxmaketitle
+}
+\makeatother
+<% endif %>
