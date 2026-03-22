@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.142"
+__version__ = "0.1.143"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 # This is the absolute last-resort fallback if a user requests a style that does not exist,
@@ -286,7 +286,7 @@ def process_containers_ast(app, doctree, docname):
         node.replace_self(wrapper)
 
 def process_epigraph_ast(app, doctree, docname):
-    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, dynamically determining level."""
+    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, handling part/chapter preambles."""
     if getattr(app.builder, 'format', '') != 'latex':
         return
         
@@ -738,6 +738,9 @@ def config_inited(app, config):
         align_map = {'left': r'\raggedright', 'right': r'\raggedleft', 'center': r'\centering'}
         
         template_vars['docdash_epigraph_width'] = epigraphs.get('width', '0.5\\textwidth')
+        
+        # Double the hash symbol so nested latex macro parsing doesn't crash on parameter tokens!
+        # This replaces #1 with ##1 because epigraph formats are inside a macro \def
         base_format = epigraphs.get('format', '--- #1')
         template_vars['docdash_epigraph_format'] = base_format.replace('#1', '##1')
         
@@ -1000,10 +1003,10 @@ def config_inited(app, config):
                 if clean_line:
                     clean_lines.append(clean_line)
             
-            clean_content = " ".join(clean_lines).replace('#1', '##1')
+            clean_content = " ".join(clean_lines)
             loaded_title_styles[style_name] = clean_content
             # Check if the style macro explicitly requests an argument
-            style_requires_arg[style_name] = '##1' in clean_content
+            style_requires_arg[style_name] = '#1' in clean_content
             
         template_vars['docdash_loaded_title_styles'] = loaded_title_styles
         template_vars['docdash_style_requires_arg'] = style_requires_arg
