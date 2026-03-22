@@ -30,4 +30,10 @@ include = ["docdash_pdf_theme*"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-docdash_pdf_theme = ["*.tex_t", "latex_styles/*.sty", "latex_styles/container_title_style/*.tex_t", "latex_styles/title_page/*.tex_t"]
+docdash_pdf_theme = [
+    "*.tex_t", 
+    "latex_styles/*.sty", 
+    "latex_styles/container_title_style/*.tex_t", 
+    "latex_styles/title_page/*.tex_t",
+    "latex_styles/admonition/*.tex_t"
+]

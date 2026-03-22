@@ -18,7 +18,7 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.146"
+__version__ = "0.1.147"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 # This is the absolute last-resort fallback if a user requests a style that does not exist,
@@ -26,6 +26,44 @@ __version__ = "0.1.146"
 DEFAULT_TITLE_STYLES = {
     'classic': r"attach boxed title to top left={xshift=0pt, yshift=0pt}, boxed title style={empty, left=1ex, right=0pt}"
 }
+
+# --- DEFAULT ADMONITION STYLE ---
+# Last resort fallback if latex_styles/admonition/default.tex_t is missing.
+DEFAULT_ADMONITION_STYLE = r"""
+enhanced, breakable, parbox=false, sharp corners,
+before skip=\csname ddadmon@#1@beforeskip\endcsname,
+after skip=\csname ddadmon@#1@afterskip\endcsname,
+attach boxed title to top left={xshift=0.2pt, yshift=0.2pt},
+fonttitle=\csname ddadmon@#1@titlefont\endcsname,
+coltitle=ddadmon@#1@titlefg, colback=ddadmon@#1@contentbg,
+code={\ifodd\value{tcblayer}\else \tcbset{colback=ddadmon@#1@contentbgnested}\fi},
+coltext=ddadmon@#1@contentfg, fontupper=\csname ddadmon@#1@contentfont\endcsname,
+boxed title style={empty, left=1ex, right=0pt},
+toprule=0pt, rightrule=0pt, leftrule=1.5pt, bottomrule=1.5pt,
+underlay boxed title={
+    \coordinate (text_box_end) at ([xshift=1ex]title.east);
+    \coordinate (icon_box_start) at (text_box_end);
+    \coordinate (icon_box_end) at ([xshift=\csname ddadmon@#1@iconpad\endcsname]icon_box_start);
+    \coordinate (dddeco_center) at ($ (icon_box_start)!.5!(icon_box_end) $);
+    \coordinate (T_NW) at ([yshift=-.5\pgflinewidth]title.north west);
+    \coordinate (T_NE) at ([yshift=-.5\pgflinewidth]text_box_end |- title.north);
+    \coordinate (I_NW) at ([yshift=-.5\pgflinewidth]icon_box_start |- title.north);
+    \coordinate (I_NE) at ([yshift=-.5\pgflinewidth]icon_box_end |- title.north);
+    \fill[fill=ddadmon@#1@titlebg] (text_box_end |- title.south) -- (title.south west) [rounded corners=1mm] -- (T_NW) [sharp corners] -- (T_NE) -- cycle;
+    \draw[ddadmon@#1@titlebg, line width=0.4pt] (text_box_end |- title.south) -- (title.south west) [rounded corners=1mm] -- (T_NW) [sharp corners] -- (T_NE) -- cycle;
+    \fill[fill=ddadmon@#1@iconboxbg] (icon_box_start |- title.south) -- (I_NW) [rounded corners=1mm] -- (I_NE) [sharp corners] -- (icon_box_end |- title.south) -- cycle;
+    \draw[ddadmon@#1@titlebg, line width=0.4pt] (icon_box_start |- title.south) -- (I_NW) [rounded corners=1mm] -- (I_NE) [sharp corners] -- (icon_box_end |- title.south) -- cycle;
+    \path(dddeco_center) node[inner sep=0pt] (ddicon) {{\csname ddadmon@#1@iconsize\endcsname\color{ddadmon@#1@iconfg}\csname ddadmon@#1@icon\endcsname}};
+    \coordinate (dddeco) at ([xshift=\csname ddadmon@#1@decospace\endcsname]icon_box_end);
+    \foreach \i [evaluate=\i as \ni using \i+2, count=\xi from 0, evaluate=\xi as \op using 1-2*\xi/10] in {0,1,2,3}{
+        \draw[line width=.5mm, ddadmon@#1@titlebg, opacity=\op] ([xshift=\i mm]dddeco |- title.north) -- ([xshift=\ni mm]dddeco |- title.east) -- ([xshift=\i mm]dddeco |- title.south);
+    }
+},
+frame hidden,
+borderline west={1.5pt}{0pt}{ddadmon@#1@titlebg}, 
+borderline south={1.5pt}{0pt}{ddadmon@#1@titlebg},
+overlay={\draw[line width=1.5pt, ddadmon@#1@titlebg] (frame.south east)--++(90:5mm);}
+"""
 
 class StyleBoxDirective(Directive):
     """Custom directive to safely parse container styles and preserve capitalized titles."""
@@ -666,6 +704,8 @@ def config_inited(app, config):
         }
 
         admon_types = ['generic', 'admonition', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention']
+        template_vars['admon_types'] = admon_types
+        
         admon_props = [
             'title_icon', 'title_icon_color', 'title_icon_size', 'title_icon_padding', 'title_decoration_spacing', 
             'title_font', 'title_font_color', 'title_font_size', 
@@ -675,8 +715,17 @@ def config_inited(app, config):
             'before_skip', 'after_skip'
         ]
 
+        admon_styles_map = {}
+        requested_admon_styles = set()
+
         for t in admon_types:
             t_dict = admonitions.get(t, {})
+            
+            # Record the requested geometric style for this admonition type
+            style_name = t_dict.get('style', t)
+            admon_styles_map[t] = style_name
+            requested_admon_styles.add(style_name)
+            
             for p in admon_props:
                 val = t_dict.get(p, None)
                 
@@ -707,6 +756,8 @@ def config_inited(app, config):
             safe_icon_color = get_highest_contrast_color(caution_bg, caution_box_bg)
             template_vars['docdash_admonition_caution_title_icon_color'] = safe_icon_color
             template_vars['docdash_admonition_caution_title_icon_color_cmyk'] = hex_to_cmyk_string(safe_icon_color)
+
+        template_vars['docdash_admon_styles_map'] = admon_styles_map
 
         # --- SPHINX NEEDS ---
         needs_props = [
@@ -789,24 +840,18 @@ def config_inited(app, config):
 
         template_vars['v'] = template_vars
 
-        # --- TITLE STYLE RESOLUTION ENGINE ---
+        # --- CONTAINER TITLE STYLE RESOLUTION ENGINE ---
         loaded_title_styles = {}
         style_requires_arg = {}
         custom_style_folder = getattr(config, 'docdash_container_title_style_path', '')
         
         for style_name in requested_styles:
             paths_to_check = []
-            
-            # 1. Custom User Folder (if specified in conf.py)
             if custom_style_folder:
                 paths_to_check.append(Path(app.confdir) / custom_style_folder / f"{style_name}.tex_t")
                 paths_to_check.append(Path(app.confdir) / custom_style_folder / f"{style_name}.tex")
-                
-            # 2. Root confdir
             paths_to_check.append(Path(app.confdir) / f"{style_name}.tex_t")
             paths_to_check.append(Path(app.confdir) / f"{style_name}.tex")
-            
-            # 3. Theme Default Folder
             paths_to_check.append(pkg_dir / "latex_styles" / "container_title_style" / f"{style_name}.tex_t")
             
             raw_content = None
@@ -822,11 +867,9 @@ def config_inited(app, config):
                     logger.warning(f"[DocDash] Container title style '{style_name}' not found. Falling back to 'classic'.")
                     raw_content = DEFAULT_TITLE_STYLES['classic']
                 
-            # Render custom snippet through Jinja!
             s_template = env.from_string(raw_content)
             rendered_content = s_template.render(**template_vars)
             
-            # Flatten and Strip LaTeX Comments
             clean_lines = []
             for line in rendered_content.splitlines():
                 clean_line = re.sub(r'(?<!\\)%.*', '', line).strip()
@@ -835,11 +878,52 @@ def config_inited(app, config):
             
             clean_content = " ".join(clean_lines)
             loaded_title_styles[style_name] = clean_content
-            # Check if the style macro explicitly requests an argument
             style_requires_arg[style_name] = '#1' in clean_content
             
         template_vars['docdash_loaded_title_styles'] = loaded_title_styles
         template_vars['docdash_style_requires_arg'] = style_requires_arg
+
+
+        # --- ADMONITION STYLE RESOLUTION ENGINE ---
+        loaded_admon_styles = {}
+        custom_admon_folder = getattr(config, 'docdash_admonition_style_path', '')
+        
+        for style_name in requested_admon_styles:
+            paths_to_check = []
+            if custom_admon_folder:
+                paths_to_check.append(Path(app.confdir) / custom_admon_folder / f"{style_name}.tex_t")
+                paths_to_check.append(Path(app.confdir) / custom_admon_folder / f"{style_name}.tex")
+            paths_to_check.append(Path(app.confdir) / f"{style_name}.tex_t")
+            paths_to_check.append(Path(app.confdir) / f"{style_name}.tex")
+            paths_to_check.append(pkg_dir / "latex_styles" / "admonition" / f"{style_name}.tex_t")
+            
+            raw_content = None
+            for p in paths_to_check:
+                if p.exists():
+                    raw_content = p.read_text(encoding='utf-8')
+                    break
+                    
+            if raw_content is None:
+                default_path = pkg_dir / "latex_styles" / "admonition" / "default.tex_t"
+                if default_path.exists():
+                    raw_content = default_path.read_text(encoding='utf-8')
+                else:
+                    logger.warning(f"[DocDash] Admonition style '{style_name}' not found. Falling back to internal default.")
+                    raw_content = DEFAULT_ADMONITION_STYLE
+                
+            s_template = env.from_string(raw_content)
+            rendered_content = s_template.render(**template_vars)
+            
+            clean_lines = []
+            for line in rendered_content.splitlines():
+                clean_line = re.sub(r'(?<!\\)%.*', '', line).strip()
+                if clean_line:
+                    clean_lines.append(clean_line)
+            
+            loaded_admon_styles[style_name] = " ".join(clean_lines)
+            
+        template_vars['docdash_loaded_admon_styles'] = loaded_admon_styles
+
 
         # --- TITLE PAGE RESOLUTION ENGINE ---
         tp_style_name = tp.get('template', 'default')
@@ -862,12 +946,9 @@ def config_inited(app, config):
                 
         if tp_raw_content is None:
             logger.warning(f"[DocDash] Title page template '{tp_style_name}' not found. Falling back to internal default.")
-            # Load the physical file instead of using a hardcoded string
             default_path = pkg_dir / "latex_styles" / "title_page" / "default.tex_t"
             tp_raw_content = default_path.read_text(encoding='utf-8')
 
-        # Render the custom title page through Jinja
-        # (We DO NOT flatten this output since it's going straight into the preamble!)
         tp_template = env.from_string(tp_raw_content)
         template_vars['docdash_rendered_title_page'] = tp_template.render(**template_vars)
 
@@ -1007,6 +1088,7 @@ def setup(app):
     # Custom Folder Settings
     app.add_config_value('docdash_container_title_style_path', '', 'env')
     app.add_config_value('docdash_title_page_template_path', '', 'env')
+    app.add_config_value('docdash_admonition_style_path', '', 'env')
 
     app.connect('config-inited', config_inited, priority=900)
     app.connect('build-finished', build_finished)
