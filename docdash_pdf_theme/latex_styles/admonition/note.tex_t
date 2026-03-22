@@ -1,25 +1,17 @@
 \newtcolorbox{ddadmonbox@<< admon_style_name >>}[2]{
     % 1. Strip all default tcolorbox drawing to create a blank canvas!
-    empty,
-    breakable,
-    parbox=false,
-    
+    empty, breakable, parbox=false,
     % 2. Setup standard spacing and fonts
     before skip=\csname ddadmon@#1@beforeskip\endcsname,
     after skip=\csname ddadmon@#1@afterskip\endcsname,
     coltext=ddadmon@#1@contentfg,
     fontupper=\csname ddadmon@#1@contentfont\endcsname,
-    
     % 3. Handle the alternating background color natively!
     colback=ddadmon@#1@contentbg,
     code={\ifodd\value{tcblayer}\else \tcbset{colback=ddadmon@#1@contentbgnested}\fi},
-    
     % 4. Set internal padding so text doesn't touch your custom borders
     top=1em, bottom=1em, left=1em, right=1em,
-    
-    % 5. PURE TIKZ DRAWING! 
-    % tcolorbox provides `frame.south west` and `frame.north east` 
-    % which map perfectly to the corners of your box.
+    % 5. PURE TIKZ DRAWING!
     underlay unbroken and first={
         \draw[
             draw=ddadmon@#1@titlebg, 
@@ -35,7 +27,6 @@
             fill=tcbcolback
         ] (frame.south west) rectangle (frame.north east);
     },
-    
     % 6. Inject your Custom Title inside the text block
     before upper={
         \textbf{\color{ddadmon@#1@titlebg}{\csname ddadmon@#1@iconsize\endcsname\csname ddadmon@#1@icon\endcsname}\quad#2}
