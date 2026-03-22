@@ -1,51 +1,44 @@
-% Create a unique memory box for this specific style
-\expandafter\newsavebox\csname ddadmonbox@<< admon_style_name >>@box\endcsname
-
-\newenvironment{ddadmonbox@<< admon_style_name >>}[2]{%
-    \edef\ddadmonafterskip{\csname ddadmon@#1@afterskip\endcsname}%
-    \edef\ddadmontitlebg{ddadmon@#1@titlebg}%
+\newtcolorbox{ddadmonbox@<< admon_style_name >>}[2]{
+    % 1. Strip all default tcolorbox drawing to create a blank canvas!
+    empty,
+    breakable,
+    parbox=false,
     
-    % 1. Save the current global tcblayer locally
-    \edef\savedtcblayer{\the\value{tcblayer}}%
+    % 2. Setup standard spacing and fonts
+    before skip=\csname ddadmon@#1@beforeskip\endcsname,
+    after skip=\csname ddadmon@#1@afterskip\endcsname,
+    coltext=ddadmon@#1@contentfg,
+    fontupper=\csname ddadmon@#1@contentfont\endcsname,
     
-    % 2. Pick color based on a simulated increment
-    \ifodd\numexpr\savedtcblayer+1\relax
-        \edef\ddadmoncontentbg{ddadmon@#1@contentbg}%
-    \else
-        \edef\ddadmoncontentbg{ddadmon@#1@contentbgnested}%
-    \fi
+    % 3. Handle the alternating background color natively!
+    colback=ddadmon@#1@contentbg,
+    code={\ifodd\value{tcblayer}\else \tcbset{colback=ddadmon@#1@contentbgnested}\fi},
     
-    \par\vspace{\csname ddadmon@#1@beforeskip\endcsname}%
-    \noindent
-    % 3. Pre-render all content inside a safe memory box!
-    \begin{lrbox}{\csname ddadmonbox@<< admon_style_name >>@box\endcsname}%
-        \begin{minipage}{\dimexpr\linewidth-3em\relax}% Width minus padding
-            
-            % 4. Cap tcblayer at 0 or 1 inside the minipage to prevent 4-layer footnote crash!
-            \ifodd\numexpr\savedtcblayer+1\relax
-                \setcounter{tcblayer}{1}% Next nested tcolorbox becomes Even
-            \else
-                \setcounter{tcblayer}{0}% Next nested tcolorbox becomes Odd
-            \fi
-            
-            \textbf{\color{\ddadmontitlebg}{\csname ddadmon@#1@iconsize\endcsname\csname ddadmon@#1@icon\endcsname}\quad#2}
-            \par\vspace{0.5em}\color{ddadmon@#1@contentfg}%
-}{%
-        \end{minipage}%
-    \end{lrbox}%
+    % 4. Set internal padding so text doesn't touch your custom borders
+    top=1em, bottom=1em, left=1em, right=1em,
     
-    % 5. Restore the global tcblayer state
-    \setcounter{tcblayer}{\savedtcblayer}%
-    
-    % 6. Paint the pre-rendered box inside TikZ (No nesting crashes!)
-    \begin{tikzpicture}
-        \node[
-            draw=\ddadmontitlebg, 
+    % 5. PURE TIKZ DRAWING! 
+    % tcolorbox provides `frame.south west` and `frame.north east` 
+    % which map perfectly to the corners of your box.
+    underlay unbroken and first={
+        \draw[
+            draw=ddadmon@#1@titlebg, 
             line width=2pt, 
-            fill=\ddadmoncontentbg, 
-            inner sep=1em, 
+            fill=tcbcolback,   % Uses the alternating color resolved in Step 3!
             rounded corners=5mm
-        ] (box) {\usebox{\csname ddadmonbox@<< admon_style_name >>@box\endcsname}};
-    \end{tikzpicture}
-    \par\vspace{\ddadmonafterskip}%
+        ] (frame.south west) rectangle (frame.north east);
+    },
+    underlay middle and last={
+        \draw[
+            draw=ddadmon@#1@titlebg, 
+            line width=2pt, 
+            fill=tcbcolback
+        ] (frame.south west) rectangle (frame.north east);
+    },
+    
+    % 6. Inject your Custom Title inside the text block
+    before upper={
+        \textbf{\color{ddadmon@#1@titlebg}{\csname ddadmon@#1@iconsize\endcsname\csname ddadmon@#1@icon\endcsname}\quad#2}
+        \par\vspace{0.5em}
+    }
 }
