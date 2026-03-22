@@ -18,7 +18,7 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.145"
+__version__ = "0.1.146"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 # This is the absolute last-resort fallback if a user requests a style that does not exist,
@@ -862,45 +862,9 @@ def config_inited(app, config):
                 
         if tp_raw_content is None:
             logger.warning(f"[DocDash] Title page template '{tp_style_name}' not found. Falling back to internal default.")
-            # Hardcoded fallback just in case the file is missing from package entirely
-            tp_raw_content = r"""
-%% Remove the first horizontal rule (top line) from the title page
-\makeatletter
-<% if not docdash_title_page_top_line %>
-\xpatchcmd{\sphinxmaketitle}{\rule{\textwidth}{1pt}}{}{}{}
-<% endif %>
-\makeatother
-
-%% Define and apply the Title Page Background
-<% if docdash_title_page_background_image or docdash_title_page_color %>
-<% if docdash_title_page_color %>
-\definecolor{titlepagecolor}{cmyk}{<< docdash_title_page_color >>}
-<% endif %>
-\makeatletter
-\let\orig@sphinxmaketitle\sphinxmaketitle
-\renewcommand{\sphinxmaketitle}{%
-  \let\orig@titlepage\titlepage
-  \def\titlepage{%
-    \orig@titlepage
-    <% if docdash_title_page_background_image %>
-    \begin{tikzpicture}[remember picture, overlay]
-      % Render Full Page Image
-      \node[inner sep=0pt, anchor=center] at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{<< docdash_title_page_background_image >>}};
-      <% if docdash_title_page_color %>
-      % Render Color Tint Overlay
-      \fill[titlepagecolor, opacity=<< docdash_title_page_color_opacity >>] (current page.south west) rectangle (current page.north east);
-      <% endif %>
-    \end{tikzpicture}%
-    <% else %>
-    % No Image: Fall back to solid pagecolor
-    \pagecolor{titlepagecolor}%
-    \AddToHookNext{shipout/after}{\nopagecolor}%
-    <% endif %>
-  }%
-  \orig@sphinxmaketitle
-}
-\makeatother
-<% endif %>"""
+            # Load the physical file instead of using a hardcoded string
+            default_path = pkg_dir / "latex_styles" / "title_page" / "default.tex_t"
+            tp_raw_content = default_path.read_text(encoding='utf-8')
 
         # Render the custom title page through Jinja
         # (We DO NOT flatten this output since it's going straight into the preamble!)
