@@ -10,11 +10,11 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.140"
+__version__ = "0.1.142"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 # This is the absolute last-resort fallback if a user requests a style that does not exist,
-# and the package's latex_styles folder is somehow missing.
+# and the package's latex_styles/title_style folder is somehow missing.
 DEFAULT_TITLE_STYLES = {
     'classic': r"attach boxed title to top left={xshift=0pt, yshift=0pt}, boxed title style={empty, left=1ex, right=0pt}"
 }
@@ -286,7 +286,7 @@ def process_containers_ast(app, doctree, docname):
         node.replace_self(wrapper)
 
 def process_epigraph_ast(app, doctree, docname):
-    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, handling part/chapter preambles."""
+    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, dynamically determining level."""
     if getattr(app.builder, 'format', '') != 'latex':
         return
         
@@ -958,23 +958,36 @@ def config_inited(app, config):
 
         # --- TITLE STYLE RESOLUTION ENGINE ---
         loaded_title_styles = {}
+        style_requires_arg = {}
+        custom_style_folder = getattr(config, 'docdash_title_style_path', '')
+        
         for style_name in requested_styles:
-            user_t = Path(app.confdir) / f"{style_name}.tex_t"
-            user_tex = Path(app.confdir) / f"{style_name}.tex"
-            pkg_t = pkg_dir / "latex_styles" / f"{style_name}.tex_t"
+            paths_to_check = []
             
-            if user_t.exists():
-                raw_content = user_t.read_text(encoding='utf-8')
-            elif user_tex.exists():
-                raw_content = user_tex.read_text(encoding='utf-8')
-            elif pkg_t.exists():
-                raw_content = pkg_t.read_text(encoding='utf-8')
-            elif style_name in DEFAULT_TITLE_STYLES:
-                raw_content = DEFAULT_TITLE_STYLES[style_name]
-            else:
-                logger.warning(f"[DocDash] Container title style '{style_name}' not found. Falling back to 'classic'.")
-                raw_content = DEFAULT_TITLE_STYLES['classic']
-                style_name = 'classic'
+            # 1. Custom User Folder (if specified in conf.py)
+            if custom_style_folder:
+                paths_to_check.append(Path(app.confdir) / custom_style_folder / f"{style_name}.tex_t")
+                paths_to_check.append(Path(app.confdir) / custom_style_folder / f"{style_name}.tex")
+                
+            # 2. Root confdir
+            paths_to_check.append(Path(app.confdir) / f"{style_name}.tex_t")
+            paths_to_check.append(Path(app.confdir) / f"{style_name}.tex")
+            
+            # 3. Theme Default Folder
+            paths_to_check.append(pkg_dir / "latex_styles" / "title_style" / f"{style_name}.tex_t")
+            
+            raw_content = None
+            for p in paths_to_check:
+                if p.exists():
+                    raw_content = p.read_text(encoding='utf-8')
+                    break
+                    
+            if raw_content is None:
+                if style_name in DEFAULT_TITLE_STYLES:
+                    raw_content = DEFAULT_TITLE_STYLES[style_name]
+                else:
+                    logger.warning(f"[DocDash] Container title style '{style_name}' not found. Falling back to 'classic'.")
+                    raw_content = DEFAULT_TITLE_STYLES['classic']
                 
             # Render custom snippet through Jinja!
             s_template = env.from_string(raw_content)
@@ -986,9 +999,14 @@ def config_inited(app, config):
                 clean_line = re.sub(r'(?<!\\)%.*', '', line).strip()
                 if clean_line:
                     clean_lines.append(clean_line)
-            loaded_title_styles[style_name] = " ".join(clean_lines)
+            
+            clean_content = " ".join(clean_lines).replace('#1', '##1')
+            loaded_title_styles[style_name] = clean_content
+            # Check if the style macro explicitly requests an argument
+            style_requires_arg[style_name] = '##1' in clean_content
             
         template_vars['docdash_loaded_title_styles'] = loaded_title_styles
+        template_vars['docdash_style_requires_arg'] = style_requires_arg
 
         template_vars['v'] = template_vars
         my_preamble = template.render(**template_vars)
@@ -1123,6 +1141,9 @@ def setup(app):
     app.add_config_value('docdash_needs', {}, 'env')
     app.add_config_value('docdash_draft', {}, 'env')
     app.add_config_value('docdash_containers', {}, 'env')
+
+    # Custom Folder Setting
+    app.add_config_value('docdash_title_style_path', '', 'env')
 
     app.connect('config-inited', config_inited, priority=900)
     app.connect('build-finished', build_finished)
