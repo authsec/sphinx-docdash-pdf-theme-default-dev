@@ -18,7 +18,7 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.160"
+__version__ = "0.1.161"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 # This is the absolute last-resort fallback if a user requests a style that does not exist,
@@ -830,15 +830,20 @@ def config_inited(app, config):
         # 2. Map properties per-type
         for t in need_types:
             t_dict = needs.get(t, {}) if isinstance(needs.get(t), dict) else {}
+            generic_dict = needs.get('generic', {}) if isinstance(needs.get('generic'), dict) else {}
             
-            style_name = t_dict.get('style', t)
+            # If a specific type doesn't have a style, inherit from 'generic', then fallback to its own name
+            style_name = t_dict.get('style', generic_dict.get('style', t))
             need_styles_map[t] = style_name
             requested_need_styles.add(style_name)
             
             for p in needs_props:
                 val = t_dict.get(p, None)
                 if val is None:
-                    # Fallback to base configuration, then to None
+                    # Fallback to the explicit 'generic' dictionary
+                    val = generic_dict.get(p, None)
+                if val is None:
+                    # Legacy fallback to the root dictionary
                     val = needs.get(p, None)
                     
                 if val is None:
@@ -867,9 +872,9 @@ def config_inited(app, config):
                     template_vars[f'docdash_need_{t}_{p}_cmyk'] = hex_to_cmyk_string(val)
 
             # Icon Math (Per-type)
-            v_pos = t_dict.get('title_vertical_position', needs.get('title_vertical_position', None))
-            manual_raise = t_dict.get('title_icon_raise', needs.get('title_icon_raise', None))
-            offset = t_dict.get('title_icon_raise_offset', needs.get('title_icon_raise_offset', '0pt'))
+            v_pos = t_dict.get('title_vertical_position', generic_dict.get('title_vertical_position', needs.get('title_vertical_position', None)))
+            manual_raise = t_dict.get('title_icon_raise', generic_dict.get('title_icon_raise', needs.get('title_icon_raise', None)))
+            offset = t_dict.get('title_icon_raise_offset', generic_dict.get('title_icon_raise_offset', needs.get('title_icon_raise_offset', '0pt')))
             if not offset: offset = '0pt'
 
             if v_pos == 'middle':
