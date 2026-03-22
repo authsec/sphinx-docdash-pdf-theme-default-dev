@@ -1,0 +1,26 @@
+\newtcolorbox{ddneedbox@<< need_style_name >>}[2]{
+    skin=enhanced, breakable, parbox=false, sharp corners, boxrule=0.5pt,
+    before skip=\csname ddneed@#1@beforeskip\endcsname,
+    after skip=\csname ddneed@#1@afterskip\endcsname,
+    colframe=ddneed@#1@titlebg,
+    colbacktitle=ddneed@#1@titlebg,
+    coltitle=ddneed@#1@titlefg,
+    fonttitle=\csname ddneed@#1@titlefont\endcsname,
+    colback=ddneed@#1@contentbg,
+    colupper=ddneed@#1@metafg,
+    fontupper=\csname ddneed@#1@metafont\endcsname,
+    collower=ddneed@#1@contentfg,
+    fontlower=\csname ddneed@#1@contentfont\endcsname,
+    segmentation code={
+        \path[fill=ddneed@#1@metabg] (interior.north west) rectangle (segmentation.east);
+        \csname ddneed@#1@segstyle\endcsname
+    },
+    before upper={
+        \let\toprule\empty\let\midrule\empty\let\bottomrule\empty\let\hline\empty
+        \hypersetup{linkcolor=ddneed@#1@metafg,urlcolor=ddneed@#1@metafg,citecolor=ddneed@#1@metafg,filecolor=ddneed@#1@metafg}
+    },
+    before lower={
+        \hypersetup{linkcolor=ddneed@#1@contentfg,urlcolor=ddneed@#1@contentfg,citecolor=ddneed@#1@contentfg,filecolor=ddneed@#1@contentfg}
+    },
+    title={{\csname ddneed@#1@iconcmd\endcsname #2}}
+}

@@ -553,33 +553,51 @@
 <% if 'sphinx_needs' in extensions %>
 \makeatletter
 
-\definecolor{ddneed@titlebg}{cmyk}{<< docdash_needs_title_background_color_cmyk >>}
-\definecolor{ddneed@titlefg}{cmyk}{<< docdash_needs_title_color_cmyk >>}
-\definecolor{ddneed@iconfg}{cmyk}{<< docdash_needs_title_icon_color_cmyk >>}
+%% 1. Register generated colors and fonts
+<% for t in need_types %>
+  \definecolor{ddneed@<< t >>@titlebg}{cmyk}{<< v['docdash_need_' ~ t ~ '_title_background_color_cmyk'] >>}
+  \definecolor{ddneed@<< t >>@titlefg}{cmyk}{<< v['docdash_need_' ~ t ~ '_title_color_cmyk'] >>}
+  \definecolor{ddneed@<< t >>@iconfg}{cmyk}{<< v['docdash_need_' ~ t ~ '_title_icon_color_cmyk'] >>}
+  \definecolor{ddneed@<< t >>@metabg}{cmyk}{<< v['docdash_need_' ~ t ~ '_metadata_background_color_cmyk'] >>}
+  \definecolor{ddneed@<< t >>@metafg}{cmyk}{<< v['docdash_need_' ~ t ~ '_metadata_font_color_cmyk'] >>}
+  \definecolor{ddneed@<< t >>@metakeyfg}{cmyk}{<< v['docdash_need_' ~ t ~ '_metadata_key_color_cmyk'] >>}
+  \definecolor{ddneed@<< t >>@contentbg}{cmyk}{<< v['docdash_need_' ~ t ~ '_content_background_color_cmyk'] >>}
+  \definecolor{ddneed@<< t >>@contentfg}{cmyk}{<< v['docdash_need_' ~ t ~ '_content_font_color_cmyk'] >>}
+  \definecolor{ddneed@<< t >>@seglinefg}{cmyk}{<< v['docdash_need_' ~ t ~ '_segmentation_color_cmyk'] >>}
 
-\definecolor{ddneed@metabg}{cmyk}{<< docdash_needs_metadata_background_color_cmyk >>}
-\definecolor{ddneed@metafg}{cmyk}{<< docdash_needs_metadata_font_color_cmyk >>}
-\definecolor{ddneed@metakeyfg}{cmyk}{<< docdash_needs_metadata_key_color_cmyk >>}
+  \expandafter\def\csname ddneed@<< t >>@titlefont\endcsname{<% if v['docdash_need_' ~ t ~ '_title_font'] %>\fontspec{<< v['docdash_need_' ~ t ~ '_title_font'] >>}<% endif %><< v['docdash_need_' ~ t ~ '_title_font_size'] >>}
+  \expandafter\def\csname ddneed@<< t >>@metafont\endcsname{<% if v['docdash_need_' ~ t ~ '_metadata_font'] %>\fontspec{<< v['docdash_need_' ~ t ~ '_metadata_font'] >>}<% endif %><< v['docdash_need_' ~ t ~ '_metadata_font_size'] >>}
+  \expandafter\def\csname ddneed@<< t >>@metakeyfont\endcsname{<% if v['docdash_need_' ~ t ~ '_metadata_key_font'] %>\fontspec{<< v['docdash_need_' ~ t ~ '_metadata_key_font'] >>}<% endif %><< v['docdash_need_' ~ t ~ '_metadata_key_font_size'] >>\color{ddneed@<< t >>@metakeyfg}\bfseries}
+  \expandafter\def\csname ddneed@<< t >>@contentfont\endcsname{<% if v['docdash_need_' ~ t ~ '_content_font'] %>\fontspec{<< v['docdash_need_' ~ t ~ '_content_font'] >>}<% endif %><< v['docdash_need_' ~ t ~ '_content_font_size'] >>}
+  
+  \expandafter\def\csname ddneed@<< t >>@iconcmd\endcsname{<% if v['docdash_need_' ~ t ~ '_title_icon'] %>\raisebox{<< v['docdash_need_' ~ t ~ '_icon_raise_math'] >>}{{<< v['docdash_need_' ~ t ~ '_title_icon_size'] >>\color{ddneed@<< t >>@iconfg}<< v['docdash_need_' ~ t ~ '_title_icon'] >>}}\hspace{0.5em}<% endif %>}
+  \expandafter\def\csname ddneed@<< t >>@beforeskip\endcsname{<< v['docdash_need_' ~ t ~ '_before_skip'] >>}
+  \expandafter\def\csname ddneed@<< t >>@afterskip\endcsname{<< v['docdash_need_' ~ t ~ '_after_skip'] >>}
+  \expandafter\def\csname ddneed@<< t >>@segstyle\endcsname{<< v['docdash_need_' ~ t ~ '_segmentation_style'] >>}
+<% endfor %>
 
-\definecolor{ddneed@contentbg}{cmyk}{<< docdash_needs_content_background_color_cmyk >>}
-\definecolor{ddneed@contentfg}{cmyk}{<< docdash_needs_content_font_color_cmyk >>}
+%% 2. Load custom need templates
+<% for style_name, style_content in docdash_loaded_need_styles.items() %>
+<< style_content >>
+<% endfor %>
 
-\definecolor{ddneed@seglinefg}{cmyk}{<< docdash_needs_segmentation_color_cmyk >>}
+%% 3. Map need types to their assigned structural styles
+<% for t in need_types %>
+\expandafter\def\csname ddneedstylemap@<< t >>\endcsname{<< docdash_need_styles_map[t] >>}
+<% endfor %>
 
-%% Define custom command for wrapping sphinx-needs bold keys
-\newkomafont{needsmetakey}{<% if docdash_needs_metadata_key_font %>\fontspec{<< docdash_needs_metadata_key_font >>}<% endif %><% if docdash_needs_metadata_key_font_size %><< docdash_needs_metadata_key_font_size >><% endif %>\color{ddneed@metakeyfg}\bfseries}
-\newcommand{\needsmetakey}[1]{{\usekomafont{needsmetakey}#1}}
-
-<% if docdash_needs_title_icon %>
-\newcommand{\docdashneedicon}{\raisebox{<< docdash_needs_title_icon_raise >>}{{<< docdash_needs_title_icon_size >>\color{ddneed@iconfg}<< docdash_needs_title_icon >>}}\hspace{0.5em}}
-<% else %>
-\newcommand{\docdashneedicon}{}
-<% endif %>
-
-\tcbset{docdashneedstyle/.style={skin=enhanced,breakable,parbox=false,sharp corners,boxrule=0.5pt,before skip=<< docdash_needs_before_skip >>,after skip=<< docdash_needs_after_skip >>,colframe=ddneed@titlebg,colbacktitle=ddneed@titlebg,coltitle=ddneed@titlefg,fonttitle=<% if docdash_needs_title_font %>\fontspec{<< docdash_needs_title_font >>}<% endif %><< docdash_needs_title_font_size >>,colback=ddneed@contentbg,colupper=ddneed@metafg,fontupper=<% if docdash_needs_metadata_font %>\fontspec{<< docdash_needs_metadata_font >>}<% endif %><< docdash_needs_metadata_font_size >>,collower=ddneed@contentfg,fontlower=<% if docdash_needs_content_font %>\fontspec{<< docdash_needs_content_font >>}<% endif %><< docdash_needs_content_font_size >>,segmentation code={\path[fill=ddneed@metabg] (interior.north west) rectangle (segmentation.east);\draw[<< docdash_needs_segmentation_style >>] (segmentation.west) -- (segmentation.east);},before upper={\let\toprule\empty\let\midrule\empty\let\bottomrule\empty\let\hline\empty\hypersetup{linkcolor=ddneed@metafg,urlcolor=ddneed@metafg,citecolor=ddneed@metafg,filecolor=ddneed@metafg}},before lower={\hypersetup{linkcolor=ddneed@contentfg,urlcolor=ddneed@contentfg,citecolor=ddneed@contentfg,filecolor=ddneed@contentfg}}}}
-
-% Ensure title bracket parsing is strictly isolated without any editor wrapping issues
-\newtcolorbox{docdashneedbox}[1]{docdashneedstyle,title={{\docdashneedicon#1}}}
+%% 4. The Dynamic Needs Router
+\newenvironment{docdashneedboxrouter}[2]{%
+    \def\myneedtype{#1}%
+    \@ifundefined{ddneedstylemap@\myneedtype}{\def\myneedtype{generic}}{}%
+    \edef\mystyle{\csname ddneedstylemap@\myneedtype\endcsname}%
+    \edef\endrouter{\noexpand\end{ddneedbox@\mystyle}}%
+    % Override \needsmetakey locally so the Sphinx-Needs inner content uses the exact fonts for this type!
+    \def\needsmetakey##1{{\csname ddneed@\myneedtype @metakeyfont\endcsname ##1}}%
+    \begingroup\edef\x{\endgroup\noexpand\begin{ddneedbox@\mystyle}{\myneedtype}}\x{#2}%
+}{%
+    \endrouter
+}
 
 \makeatother
 <% endif %>

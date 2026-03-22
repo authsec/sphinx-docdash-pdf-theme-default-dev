@@ -18,7 +18,7 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.158"
+__version__ = "0.1.159"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 DEFAULT_TITLE_STYLES = {
@@ -62,6 +62,25 @@ DEFAULT_ADMONITION_STYLE = r"""
     borderline south={1.5pt}{0pt}{ddadmon@#1@titlebg},
     overlay={\draw[line width=1.5pt, ddadmon@#1@titlebg] (frame.south east)--++(90:5mm);},
     title={#2}
+}
+"""
+
+# --- DEFAULT NEED STYLE ---
+DEFAULT_NEED_STYLE = r"""
+\newtcolorbox{ddneedbox@<< need_style_name >>}[2]{
+    skin=enhanced, breakable, parbox=false, sharp corners, boxrule=0.5pt,
+    before skip=\csname ddneed@#1@beforeskip\endcsname,
+    after skip=\csname ddneed@#1@afterskip\endcsname,
+    colframe=ddneed@#1@titlebg, colbacktitle=ddneed@#1@titlebg, coltitle=ddneed@#1@titlefg, fonttitle=\csname ddneed@#1@titlefont\endcsname,
+    colback=ddneed@#1@contentbg, colupper=ddneed@#1@metafg, fontupper=\csname ddneed@#1@metafont\endcsname,
+    collower=ddneed@#1@contentfg, fontlower=\csname ddneed@#1@contentfont\endcsname,
+    segmentation code={
+        \path[fill=ddneed@#1@metabg] (interior.north west) rectangle (segmentation.east);
+        \csname ddneed@#1@segstyle\endcsname
+    },
+    before upper={\let\toprule\empty\let\midrule\empty\let\bottomrule\empty\let\hline\empty\hypersetup{linkcolor=ddneed@#1@metafg,urlcolor=ddneed@#1@metafg,citecolor=ddneed@#1@metafg,filecolor=ddneed@#1@metafg}},
+    before lower={\hypersetup{linkcolor=ddneed@#1@contentfg,urlcolor=ddneed@#1@contentfg,citecolor=ddneed@#1@contentfg,filecolor=ddneed@#1@contentfg}},
+    title={{\csname ddneed@#1@iconcmd\endcsname #2}}
 }
 """
 
@@ -261,8 +280,10 @@ def process_needs_ast(app, doctree, docname):
             unique_ids.append(f"needs:{nid}")
 
         title = ''
+        need_type = 'generic'
         if hasattr(app.env, 'needs_all_needs') and nid in app.env.needs_all_needs:
             title = app.env.needs_all_needs[nid].get('title', '')
+            need_type = app.env.needs_all_needs[nid].get('type', 'generic')
 
         def esc(s):
             if not s: return ''
@@ -271,11 +292,13 @@ def process_needs_ast(app, doctree, docname):
         safe_nid = esc(nid)
         safe_title = esc(title)
         title_str = f"{safe_nid}: {safe_title}" if safe_title else safe_nid
+        safe_type = esc(need_type)
         
         labels_tex = "".join([f"\\phantomsection\\label{{\\detokenize{{{i}}}}}" for i in unique_ids])
 
         wrapper = nodes.container(classes=['docdash-flat-need'])
-        wrapper.append(nodes.raw('', f'\n{labels_tex}\n\\begin{{docdashneedbox}}{{{title_str}}}\n', format='latex'))
+        # Start the dynamic router!
+        wrapper.append(nodes.raw('', f'\n{labels_tex}\n\\begin{{docdashneedboxrouter}}{{{safe_type}}}{{{title_str}}}\n', format='latex'))
 
         metadata_table = next(iter(node.traverse(nodes.table)), None)
         
@@ -313,7 +336,7 @@ def process_needs_ast(app, doctree, docname):
                     for entry in content_row.traverse(nodes.entry):
                         wrapper.extend(entry.children)
 
-        wrapper.append(nodes.raw('', '\n\\end{docdashneedbox}\n', format='latex'))
+        wrapper.append(nodes.raw('', '\n\\end{docdashneedboxrouter}\n', format='latex'))
         node.replace_self(wrapper)
 
 def config_inited(app, config):
@@ -742,46 +765,70 @@ def config_inited(app, config):
             'after_skip': '1.5em plus 0.5em minus 0.5em'
         }
 
-        for p in needs_props:
-            val = needs.get(p, None)
-            if val is None:
-                if p == 'segmentation_color':
-                    val = template_vars.get('docdash_needs_title_background_color', needs_defaults['title_background_color'])
-                else:
-                    val = needs_defaults.get(p, '')
-            
-            if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
-                if val not in config.latex_additional_files:
-                    config.latex_additional_files.append(val)
-                base_filename = os.path.basename(val)
-                val = f"\\includegraphics[height=1em, keepaspectratio]{{{base_filename}}}"
-            
-            if p == 'segmentation_style':
-                val_str = str(val).lower()
-                if val_str in ['none', 'hidden', 'false', '0', '', 'empty']:
-                    val = 'draw=none'
-                else:
-                    val = f"{val_str}, draw=ddneed@seglinefg, line width=0.5pt"
+        # 1. Identify all active need types (from sphinx-needs or explicit docdash config)
+        need_types = ['generic']
+        if hasattr(config, 'needs_types') and config.needs_types:
+            need_types.extend([t['directive'] for t in config.needs_types])
+        # Add any explicitly declared keys that are dictionaries
+        for k, v in needs.items():
+            if isinstance(v, dict) and k not in need_types:
+                need_types.append(k)
+        
+        template_vars['need_types'] = need_types
+        need_styles_map = {}
+        requested_need_styles = set()
 
-            template_vars[f'docdash_needs_{p}'] = val
+        # 2. Map properties per-type
+        for t in need_types:
+            t_dict = needs.get(t, {}) if isinstance(needs.get(t), dict) else {}
             
-            if p.endswith('_color'):
-                template_vars[f'docdash_needs_{p}_cmyk'] = hex_to_cmyk_string(val)
+            style_name = t_dict.get('style', t)
+            need_styles_map[t] = style_name
+            requested_need_styles.add(style_name)
+            
+            for p in needs_props:
+                val = t_dict.get(p, None)
+                if val is None:
+                    # Fallback to base configuration, then default
+                    val = needs.get(p, needs_defaults.get(p, ''))
+            
+                if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
+                    if val not in config.latex_additional_files:
+                        config.latex_additional_files.append(val)
+                    base_filename = os.path.basename(val)
+                    val = f"\\includegraphics[height=1em, keepaspectratio]{{{base_filename}}}"
+            
+                if p == 'segmentation_style':
+                    val_str = str(val).lower()
+                    if val_str in ['none', 'hidden', 'false', '0', '', 'empty']:
+                        val = r'\draw[draw=none] (segmentation.west) -- (segmentation.east);'
+                    else:
+                        val = f"\\draw[{val_str}, draw=ddneed@{t}@seglinefg, line width=0.5pt] (segmentation.west) -- (segmentation.east);"
 
-        v_pos = needs.get('title_vertical_position', None)
-        manual_raise = needs.get('title_icon_raise', None)
-        offset = needs.get('title_icon_raise_offset', '0pt')
-        if not offset: offset = '0pt'
+                template_vars[f'docdash_need_{t}_{p}'] = val
+            
+                if p.endswith('_color'):
+                    template_vars[f'docdash_need_{t}_{p}_cmyk'] = hex_to_cmyk_string(val)
 
-        if v_pos == 'middle':
-            template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr 0.5\fontcharht\font`X - 0.5\height + {offset} \relax'
-        elif v_pos == 'top':
-            template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr 0.7em - \height + {offset} \relax'
-        elif v_pos == 'bottom':
-            template_vars['docdash_needs_title_icon_raise'] = offset
-        else:
-            base_raise = manual_raise if manual_raise is not None else '0pt'
-            template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr {base_raise} + {offset} \relax'
+            # Icon Math (Per-type)
+            v_pos = t_dict.get('title_vertical_position', needs.get('title_vertical_position', None))
+            manual_raise = t_dict.get('title_icon_raise', needs.get('title_icon_raise', None))
+            offset = t_dict.get('title_icon_raise_offset', needs.get('title_icon_raise_offset', '0pt'))
+            if not offset: offset = '0pt'
+
+            if v_pos == 'middle':
+                raise_val = rf'\dimexpr 0.5\fontcharht\font`X - 0.5\height + {offset} \relax'
+            elif v_pos == 'top':
+                raise_val = rf'\dimexpr 0.7em - \height + {offset} \relax'
+            elif v_pos == 'bottom':
+                raise_val = offset
+            else:
+                base_raise = manual_raise if manual_raise is not None else '0pt'
+                raise_val = rf'\dimexpr {base_raise} + {offset} \relax'
+                
+            template_vars[f'docdash_need_{t}_icon_raise_math'] = raise_val
+
+        template_vars['docdash_need_styles_map'] = need_styles_map
 
         template_vars['v'] = template_vars
 
@@ -856,15 +903,49 @@ def config_inited(app, config):
                     logger.warning(f"[DocDash] Admonition style '{style_name}' not found. Falling back to internal default.")
                     raw_content = DEFAULT_ADMONITION_STYLE
             
-            # Inject the current style name so the template can build its \newenvironment signature
             template_vars['admon_style_name'] = style_name
             s_template = env.from_string(raw_content)
             rendered_content = s_template.render(**template_vars)
             
-            # Do NOT flatten this output. Let users keep their clean multi-line \newenvironment blocks!
             loaded_admon_styles[style_name] = rendered_content
             
         template_vars['docdash_loaded_admon_styles'] = loaded_admon_styles
+
+
+        # --- NEED STYLE RESOLUTION ENGINE ---
+        loaded_need_styles = {}
+        custom_need_folder = getattr(config, 'docdash_need_style_path', '')
+        
+        for style_name in requested_need_styles:
+            paths_to_check = []
+            if custom_need_folder:
+                paths_to_check.append(Path(app.confdir) / custom_need_folder / f"{style_name}.tex_t")
+                paths_to_check.append(Path(app.confdir) / custom_need_folder / f"{style_name}.tex")
+            paths_to_check.append(Path(app.confdir) / f"{style_name}.tex_t")
+            paths_to_check.append(Path(app.confdir) / f"{style_name}.tex")
+            paths_to_check.append(pkg_dir / "latex_styles" / "need" / f"{style_name}.tex_t")
+            
+            raw_content = None
+            for p in paths_to_check:
+                if p.exists():
+                    raw_content = p.read_text(encoding='utf-8')
+                    break
+                    
+            if raw_content is None:
+                default_path = pkg_dir / "latex_styles" / "need" / "default.tex_t"
+                if default_path.exists():
+                    raw_content = default_path.read_text(encoding='utf-8')
+                else:
+                    logger.warning(f"[DocDash] Need style '{style_name}' not found. Falling back to internal default.")
+                    raw_content = DEFAULT_NEED_STYLE
+            
+            template_vars['need_style_name'] = style_name
+            s_template = env.from_string(raw_content)
+            rendered_content = s_template.render(**template_vars)
+            
+            loaded_need_styles[style_name] = rendered_content
+            
+        template_vars['docdash_loaded_need_styles'] = loaded_need_styles
 
 
         # --- TITLE PAGE RESOLUTION ENGINE ---
@@ -1037,6 +1118,7 @@ def setup(app):
     app.add_config_value('docdash_container_title_style_path', '', 'env')
     app.add_config_value('docdash_title_page_template_path', '', 'env')
     app.add_config_value('docdash_admonition_style_path', '', 'env')
+    app.add_config_value('docdash_need_style_path', '', 'env')
 
     app.connect('config-inited', config_inited, priority=900)
     app.connect('build-finished', build_finished)
