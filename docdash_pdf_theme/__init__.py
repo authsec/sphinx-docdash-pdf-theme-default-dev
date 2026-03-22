@@ -18,14 +18,17 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.159"
+__version__ = "0.1.160"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
+# This is the absolute last-resort fallback if a user requests a style that does not exist,
+# and the package's latex_styles/container_title_style folder is somehow missing.
 DEFAULT_TITLE_STYLES = {
     'classic': r"attach boxed title to top left={xshift=0pt, yshift=0pt}, boxed title style={empty, left=1ex, right=0pt}"
 }
 
 # --- DEFAULT ADMONITION STYLE ---
+# Last resort fallback if latex_styles/admonition/default.tex_t is missing.
 DEFAULT_ADMONITION_STYLE = r"""
 \newtcolorbox{ddadmonbox@<< admon_style_name >>}[2]{
     enhanced, breakable, parbox=false, sharp corners,
@@ -66,6 +69,7 @@ DEFAULT_ADMONITION_STYLE = r"""
 """
 
 # --- DEFAULT NEED STYLE ---
+# Last resort fallback if latex_styles/need/default.tex_t is missing.
 DEFAULT_NEED_STYLE = r"""
 \newtcolorbox{ddneedbox@<< need_style_name >>}[2]{
     skin=enhanced, breakable, parbox=false, sharp corners, boxrule=0.5pt,
@@ -100,16 +104,21 @@ class StyleBoxDirective(Directive):
         self.assert_has_content()
         container = nodes.container()
         
+        # First argument is now the class(es), just like standard .. container::
         if self.arguments:
             container['classes'].extend(self.arguments[0].split())
             
+        # Allow fallback to standard :class: just in case
         container['classes'].extend(self.options.get('class', []))
 
+        # Retrieve un-mutated title string from either :title: or :name:
         raw_title = self.options.get('title') or self.options.get('name')
         if raw_title:
             container['docdash_stylebox_title'] = raw_title
 
+        # Apply standard docutils name normalization for HTML/Sphinx cross-referencing
         self.add_name(container)
+
         self.state.nested_parse(self.content, self.content_offset, container)
         return [container]
 
@@ -137,8 +146,10 @@ def process_containers_ast(app, doctree, docname):
 
         node['docdash_processed'] = True
 
+        # Extract title preferentially from our robust custom directive
         title = node.get('docdash_stylebox_title', None)
         
+        # Fallback to the lowercased :name: option if they used standard containers
         if title is None:
             names = node.get('names', [])
             title = names[0] if names else ""
@@ -148,8 +159,11 @@ def process_containers_ast(app, doctree, docname):
             return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
 
         safe_title = esc(title)
+
+        # Sanitize the class name to prevent LaTeX pgfkeys crash
         safe_match_class = re.sub(r'[^a-zA-Z]', '', match_class)
 
+        # Conditionally apply the complex title styles only if a title actually exists
         if safe_title:
             icon_tex = f"\\csname ddconticon{safe_match_class}\\endcsname"
             title_str = f"ddcontainertitlestyle{safe_match_class}, title={{{icon_tex} {safe_title}}}"
@@ -180,6 +194,7 @@ def process_epigraph_ast(app, doctree, docname):
             continue
         node['docdash_processed'] = True
         
+        # Calculate section depth and determine sec_type
         p = node.parent
         depth = 0
         while p:
@@ -196,6 +211,7 @@ def process_epigraph_ast(app, doctree, docname):
         if depth in type_map:
             sec_type = type_map[depth]
             
+        # Determine if this is a true KOMA preamble (first element under a heading)
         is_preamble = False
         idx = -1
         parent = node.parent
@@ -212,15 +228,18 @@ def process_epigraph_ast(app, doctree, docname):
         
         wrapper = nodes.container(classes=['docdash-dictum'])
         
+        # If it is a structural preamble, inject the KOMA preamble macro and setup the styling
         if is_preamble and sec_type in ('part', 'chapter'):
             wrapper.append(nodes.raw('', f'\\set{sec_type}preamble[u]{{\n\\begingroup\n\\setupddepigraph{{{sec_type}}}\n', format='latex'))
         else:
             wrapper.append(nodes.raw('', f'\\begingroup\n\\setupddepigraph{{{sec_type}}}\n', format='latex'))
         
+        # Construct the standard KOMA dictum
         if attr:
             node.remove(attr)
             wrapper.append(nodes.raw('', '\\dictum[{', format='latex'))
             
+            # Unwrap paragraph nodes in attribution so KOMA doesn't crash on \par
             for child in attr.children:
                 if isinstance(child, nodes.paragraph):
                     for gc in child.children:
@@ -232,11 +251,13 @@ def process_epigraph_ast(app, doctree, docname):
         else:
             wrapper.append(nodes.raw('', '\\dictum{', format='latex'))
         
+        # Add the remaining quote text
         for child in node.children:
             wrapper.append(child)
             
         wrapper.append(nodes.raw('', '}\n\\endgroup\n', format='latex'))
         
+        # Close the structural preamble if active, and perform AST Surgery to move it before the title
         if is_preamble and sec_type in ('part', 'chapter'):
             wrapper.append(nodes.raw('', '}\n', format='latex'))
             parent.remove(node)
@@ -259,6 +280,7 @@ def process_needs_ast(app, doctree, docname):
         for child in node.traverse(nodes.Element):
             child['docdash_processed'] = True
 
+        # Extract the exact primary Needs ID
         node_ids = node.attributes.get('ids', [])
         nid = node_ids[0] if node_ids else None
         if not nid:
@@ -269,13 +291,18 @@ def process_needs_ast(app, doctree, docname):
         if not nid:
             continue
 
+        # CRITICAL FIX: Extract ALL IDs from every single element inside the need node
+        # before we destroy it, so no hyperref anchors are lost!
         all_ids = []
         for n in node.traverse(nodes.Element):
             if 'ids' in n.attributes:
                 all_ids.extend(n.attributes['ids'])
                 
+        # Remove duplicates while preserving order
         unique_ids = list(dict.fromkeys(all_ids))
         
+        # Sphinx-Needs internally maps cross-references to the "needs:" namespace,
+        # so we forcefully ensure it exists as a fallback anchor.
         if nid and f"needs:{nid}" not in unique_ids:
             unique_ids.append(f"needs:{nid}")
 
@@ -285,6 +312,7 @@ def process_needs_ast(app, doctree, docname):
             title = app.env.needs_all_needs[nid].get('title', '')
             need_type = app.env.needs_all_needs[nid].get('type', 'generic')
 
+        # SANITIZER to absolutely nuke any possibility of a pgfkeys runaway paragraph
         def esc(s):
             if not s: return ''
             return str(s).replace('_', r'\_').replace('%', r'\%').replace('$', r'\$').replace('#', r'\#').replace('&', r'\&').replace('{', r'\{').replace('}', r'\}').replace('\n', ' ').replace('\r', '').strip()
@@ -296,18 +324,23 @@ def process_needs_ast(app, doctree, docname):
         
         labels_tex = "".join([f"\\phantomsection\\label{{\\detokenize{{{i}}}}}" for i in unique_ids])
 
+        # Construct the new raw LaTeX wrapped tree
         wrapper = nodes.container(classes=['docdash-flat-need'])
         # Start the dynamic router!
         wrapper.append(nodes.raw('', f'\n{labels_tex}\n\\begin{{docdashneedboxrouter}}{{{safe_type}}}{{{title_str}}}\n', format='latex'))
 
         metadata_table = next(iter(node.traverse(nodes.table)), None)
         
+        # Flawless Table Demolition and Content Extraction
         if metadata_table:
             rows = list(metadata_table.traverse(nodes.row))
             if len(rows) > 0:
+                # In Sphinx-Needs, Row 0 is the Header. Row -1 is ALWAYS the Content.
+                # Everything in between is the structural metadata.
                 meta_rows = rows[1:-1] if len(rows) > 2 else []
                 content_row = rows[-1] if len(rows) > 1 else None
 
+                # 1. Process Metadata
                 for row in meta_rows:
                     entries = list(row.traverse(nodes.entry))
                     if len(entries) >= 2:
@@ -319,6 +352,7 @@ def process_needs_ast(app, doctree, docname):
                         wrapper.append(p)
                     else:
                         for entry in entries:
+                            # CRITICAL FIX: Intercept the hidden needs_label tag in single-column layouts
                             for inline_node in list(entry.traverse(nodes.inline)):
                                 if 'needs_label' in inline_node.get('classes', []):
                                     wrap = nodes.inline()
@@ -331,17 +365,21 @@ def process_needs_ast(app, doctree, docname):
                             p.extend(entry.children)
                             wrapper.append(p)
 
+                # 2. Trigger lower box color and process Content!
                 if content_row:
                     wrapper.append(nodes.raw('', '\n\\tcblower\n', format='latex'))
                     for entry in content_row.traverse(nodes.entry):
                         wrapper.extend(entry.children)
 
         wrapper.append(nodes.raw('', '\n\\end{docdashneedboxrouter}\n', format='latex'))
+        
+        # Demolish the original table and replace it with our flat structure
         node.replace_self(wrapper)
 
 def config_inited(app, config):
     """Fired when Sphinx finishes reading conf.py. Translates dict configs to flat Jinja variables."""
     
+    # 1. Smart default for latex_engine
     if config.latex_engine == 'pdflatex':
         config.latex_engine = 'lualatex'
     elif config.latex_engine != 'lualatex':
@@ -350,23 +388,27 @@ def config_inited(app, config):
             "This theme is designed for 'lualatex'. Your build might not render correctly."
         )
 
+    # 2. Set default document class to KOMA (scrbook)
     if not config.latex_docclass:
          config.latex_docclass = {'manual': 'scrbook'}
     else:
          config.latex_docclass.setdefault('manual', 'scrbook')
 
+    # 3. Dynamic LaTeX document naming
     safe_project = get_safe_filename(config.project)
     if not config.latex_documents or 'outpdfname.tex' in config.latex_documents[0][1]:
         config.latex_documents = [
             (config.root_doc, f"{safe_project}.tex", config.project, config.author, 'manual'),
         ]
 
+    # 4. Render Preamble Template with Custom Colors
     pkg_dir = Path(__file__).parent.resolve()
     preamble_path = pkg_dir / "preamble.tex_t"
     
     if preamble_path.exists():
         template_content = preamble_path.read_text(encoding="utf-8")
         
+        # Configure Jinja with LaTeX-safe delimiters to prevent '{%' clashes
         env = Environment(
             block_start_string='<%',
             block_end_string='%>',
@@ -379,6 +421,7 @@ def config_inited(app, config):
         
         template_vars = {}
         
+        # Pull dictionaries from Sphinx config
         tp = getattr(config, 'docdash_title_page', {})
         headings = getattr(config, 'docdash_headings', {})
         parts = getattr(config, 'docdash_parts', {})
@@ -393,6 +436,7 @@ def config_inited(app, config):
         requested_styles = set()
         
         for c_name, c_conf in containers.items():
+            # Sanitize the class name for LaTeX variables
             safe_name = re.sub(r'[^a-zA-Z]', '', c_name)
             
             title_color = c_conf.get('title_color', '#000000')
@@ -401,6 +445,7 @@ def config_inited(app, config):
             title_text_color = c_conf.get('title_font_color', get_highest_contrast_color(title_color, title_color, target='foreground'))
             c_conf['title_font_color_cmyk'] = hex_to_cmyk_string(title_text_color)
             
+            # Default icon color to the title text color if missing
             icon_color = c_conf.get('title_icon_color', title_text_color)
             c_conf['title_icon_color_cmyk'] = hex_to_cmyk_string(icon_color)
             
@@ -414,11 +459,13 @@ def config_inited(app, config):
             requested_styles.add(style_name)
             c_conf['title_style'] = style_name
             
+            # Prevent string conversion bugs (e.g. "False" instead of False)
             frame_val = c_conf.get('container_frame', True)
             if isinstance(frame_val, str):
                 frame_val = frame_val.lower() not in ['false', '0', 'none', 'no']
             c_conf['container_frame'] = frame_val
             
+            # Extract boolean for text width alignment
             match_val = c_conf.get('match_text_width', False)
             if isinstance(match_val, str):
                 match_val = match_val.lower() not in ['false', '0', 'none', 'no']
@@ -440,6 +487,7 @@ def config_inited(app, config):
         template_vars['docdash_footheight'] = getattr(config, 'docdash_footheight', '25pt')
         template_vars['extensions'] = getattr(config, 'extensions', [])
 
+        # Footer Logo
         footer_logo = getattr(config, 'docdash_footer_logo', None)
         if footer_logo and isinstance(footer_logo, str):
             if footer_logo not in config.latex_additional_files:
@@ -551,6 +599,7 @@ def config_inited(app, config):
                 }
         template_vars['docdash_part_backgrounds'] = processed_part_bgs
 
+        # Global Part Fonts/Colors
         for el in ['part', 'part_number', 'part_number_part', 'part_number_number']:
             prefix = el.replace('part_', '') + '_' if el != 'part' else ''
             template_vars[f'docdash_{el}_font'] = parts.get(f'{prefix}font', None)
@@ -789,8 +838,15 @@ def config_inited(app, config):
             for p in needs_props:
                 val = t_dict.get(p, None)
                 if val is None:
-                    # Fallback to base configuration, then default
-                    val = needs.get(p, needs_defaults.get(p, ''))
+                    # Fallback to base configuration, then to None
+                    val = needs.get(p, None)
+                    
+                if val is None:
+                    # Dynamic fallback specifically for segmentation_color!
+                    if p == 'segmentation_color':
+                        val = template_vars.get(f'docdash_need_{t}_title_background_color', needs_defaults['title_background_color'])
+                    else:
+                        val = needs_defaults.get(p, '')
             
                 if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
                     if val not in config.latex_additional_files:
