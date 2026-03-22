@@ -18,7 +18,7 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.163"
+__version__ = "0.1.164"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 # This is the absolute last-resort fallback if a user requests a style that does not exist,
@@ -994,7 +994,11 @@ def config_inited(app, config):
             
             template_vars['admon_style_name'] = style_name
             s_template = env.from_string(raw_content)
-            rendered_content = s_template.render(**template_vars)
+            raw_rendered = s_template.render(**template_vars)
+            
+            # STRIP EMPTY LINES TO PREVENT PGFKEYS CRASHES
+            clean_lines = [line for line in raw_rendered.splitlines() if line.strip()]
+            rendered_content = "\n".join(clean_lines)
             
             loaded_admon_styles[style_name] = rendered_content
             
@@ -1042,7 +1046,11 @@ def config_inited(app, config):
             
             template_vars['need_style_name'] = style_name
             s_template = env.from_string(raw_content)
-            rendered_content = s_template.render(**template_vars)
+            raw_rendered = s_template.render(**template_vars)
+            
+            # STRIP EMPTY LINES TO PREVENT PGFKEYS CRASHES
+            clean_lines = [line for line in raw_rendered.splitlines() if line.strip()]
+            rendered_content = "\n".join(clean_lines)
             
             loaded_need_styles[style_name] = rendered_content
             
