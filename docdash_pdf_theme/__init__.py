@@ -18,7 +18,7 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.161"
+__version__ = "0.1.162"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 # This is the absolute last-resort fallback if a user requests a style that does not exist,
@@ -310,7 +310,8 @@ def process_needs_ast(app, doctree, docname):
         need_type = 'generic'
         if hasattr(app.env, 'needs_all_needs') and nid in app.env.needs_all_needs:
             title = app.env.needs_all_needs[nid].get('title', '')
-            need_type = app.env.needs_all_needs[nid].get('type', 'generic')
+            # Force lowercase just in case the user configured mixed-case directives
+            need_type = app.env.needs_all_needs[nid].get('type', 'generic').lower()
 
         # SANITIZER to absolutely nuke any possibility of a pgfkeys runaway paragraph
         def esc(s):
@@ -817,11 +818,11 @@ def config_inited(app, config):
         # 1. Identify all active need types (from sphinx-needs or explicit docdash config)
         need_types = ['generic']
         if hasattr(config, 'needs_types') and config.needs_types:
-            need_types.extend([t['directive'] for t in config.needs_types])
+            need_types.extend([t['directive'].lower() for t in config.needs_types])
         # Add any explicitly declared keys that are dictionaries
         for k, v in needs.items():
-            if isinstance(v, dict) and k not in need_types:
-                need_types.append(k)
+            if isinstance(v, dict) and k.lower() not in need_types:
+                need_types.append(k.lower())
         
         template_vars['need_types'] = need_types
         need_styles_map = {}
@@ -900,12 +901,22 @@ def config_inited(app, config):
         
         for style_name in requested_styles:
             paths_to_check = []
+            
+            # AGGRESSIVE PATH HUNTING (Confdir & Srcdir)
             if custom_style_folder:
-                paths_to_check.append(Path(app.confdir) / custom_style_folder / f"{style_name}.tex_t")
-                paths_to_check.append(Path(app.confdir) / custom_style_folder / f"{style_name}.tex")
-            paths_to_check.append(Path(app.confdir) / f"{style_name}.tex_t")
-            paths_to_check.append(Path(app.confdir) / f"{style_name}.tex")
-            paths_to_check.append(pkg_dir / "latex_styles" / "container_title_style" / f"{style_name}.tex_t")
+                paths_to_check.extend([
+                    Path(app.confdir) / custom_style_folder / f"{style_name}.tex_t",
+                    Path(app.confdir) / custom_style_folder / f"{style_name}.tex",
+                    Path(app.srcdir) / custom_style_folder / f"{style_name}.tex_t",
+                    Path(app.srcdir) / custom_style_folder / f"{style_name}.tex"
+                ])
+            paths_to_check.extend([
+                Path(app.confdir) / f"{style_name}.tex_t",
+                Path(app.confdir) / f"{style_name}.tex",
+                Path(app.srcdir) / f"{style_name}.tex_t",
+                Path(app.srcdir) / f"{style_name}.tex",
+                pkg_dir / "latex_styles" / "container_title_style" / f"{style_name}.tex_t"
+            ])
             
             raw_content = None
             for p in paths_to_check:
@@ -943,12 +954,22 @@ def config_inited(app, config):
         
         for style_name in requested_admon_styles:
             paths_to_check = []
+            
+            # AGGRESSIVE PATH HUNTING (Confdir & Srcdir)
             if custom_admon_folder:
-                paths_to_check.append(Path(app.confdir) / custom_admon_folder / f"{style_name}.tex_t")
-                paths_to_check.append(Path(app.confdir) / custom_admon_folder / f"{style_name}.tex")
-            paths_to_check.append(Path(app.confdir) / f"{style_name}.tex_t")
-            paths_to_check.append(Path(app.confdir) / f"{style_name}.tex")
-            paths_to_check.append(pkg_dir / "latex_styles" / "admonition" / f"{style_name}.tex_t")
+                paths_to_check.extend([
+                    Path(app.confdir) / custom_admon_folder / f"{style_name}.tex_t",
+                    Path(app.confdir) / custom_admon_folder / f"{style_name}.tex",
+                    Path(app.srcdir) / custom_admon_folder / f"{style_name}.tex_t",
+                    Path(app.srcdir) / custom_admon_folder / f"{style_name}.tex"
+                ])
+            paths_to_check.extend([
+                Path(app.confdir) / f"{style_name}.tex_t",
+                Path(app.confdir) / f"{style_name}.tex",
+                Path(app.srcdir) / f"{style_name}.tex_t",
+                Path(app.srcdir) / f"{style_name}.tex",
+                pkg_dir / "latex_styles" / "admonition" / f"{style_name}.tex_t"
+            ])
             
             raw_content = None
             for p in paths_to_check:
@@ -979,25 +1000,37 @@ def config_inited(app, config):
         
         for style_name in requested_need_styles:
             paths_to_check = []
+            
+            # AGGRESSIVE PATH HUNTING (Confdir & Srcdir)
             if custom_need_folder:
-                paths_to_check.append(Path(app.confdir) / custom_need_folder / f"{style_name}.tex_t")
-                paths_to_check.append(Path(app.confdir) / custom_need_folder / f"{style_name}.tex")
-            paths_to_check.append(Path(app.confdir) / f"{style_name}.tex_t")
-            paths_to_check.append(Path(app.confdir) / f"{style_name}.tex")
-            paths_to_check.append(pkg_dir / "latex_styles" / "need" / f"{style_name}.tex_t")
+                paths_to_check.extend([
+                    Path(app.confdir) / custom_need_folder / f"{style_name}.tex_t",
+                    Path(app.confdir) / custom_need_folder / f"{style_name}.tex",
+                    Path(app.srcdir) / custom_need_folder / f"{style_name}.tex_t",
+                    Path(app.srcdir) / custom_need_folder / f"{style_name}.tex"
+                ])
+            paths_to_check.extend([
+                Path(app.confdir) / f"{style_name}.tex_t",
+                Path(app.confdir) / f"{style_name}.tex",
+                Path(app.srcdir) / f"{style_name}.tex_t",
+                Path(app.srcdir) / f"{style_name}.tex",
+                pkg_dir / "latex_styles" / "need" / f"{style_name}.tex_t"
+            ])
             
             raw_content = None
             for p in paths_to_check:
                 if p.exists():
+                    logger.info(f"[DocDash] Found custom Need style: {p}")
                     raw_content = p.read_text(encoding='utf-8')
                     break
                     
             if raw_content is None:
                 default_path = pkg_dir / "latex_styles" / "need" / "default.tex_t"
                 if default_path.exists():
+                    logger.info(f"[DocDash] Need style '{style_name}' not found in user directory. Loading default package style.")
                     raw_content = default_path.read_text(encoding='utf-8')
                 else:
-                    logger.warning(f"[DocDash] Need style '{style_name}' not found. Falling back to internal default.")
+                    logger.warning(f"[DocDash] Need style '{style_name}' not found. Falling back to internal fallback string.")
                     raw_content = DEFAULT_NEED_STYLE
             
             template_vars['need_style_name'] = style_name
@@ -1014,13 +1047,22 @@ def config_inited(app, config):
         tp_custom_folder = getattr(config, 'docdash_title_page_template_path', '')
         
         tp_paths_to_check = []
+        
+        # AGGRESSIVE PATH HUNTING (Confdir & Srcdir)
         if tp_custom_folder:
-            tp_paths_to_check.append(Path(app.confdir) / tp_custom_folder / f"{tp_style_name}.tex_t")
-            tp_paths_to_check.append(Path(app.confdir) / tp_custom_folder / f"{tp_style_name}.tex")
-            
-        tp_paths_to_check.append(Path(app.confdir) / f"{tp_style_name}.tex_t")
-        tp_paths_to_check.append(Path(app.confdir) / f"{tp_style_name}.tex")
-        tp_paths_to_check.append(pkg_dir / "latex_styles" / "title_page" / f"{tp_style_name}.tex_t")
+            tp_paths_to_check.extend([
+                Path(app.confdir) / tp_custom_folder / f"{tp_style_name}.tex_t",
+                Path(app.confdir) / tp_custom_folder / f"{tp_style_name}.tex",
+                Path(app.srcdir) / tp_custom_folder / f"{tp_style_name}.tex_t",
+                Path(app.srcdir) / tp_custom_folder / f"{tp_style_name}.tex"
+            ])
+        tp_paths_to_check.extend([
+            Path(app.confdir) / f"{tp_style_name}.tex_t",
+            Path(app.confdir) / f"{tp_style_name}.tex",
+            Path(app.srcdir) / f"{tp_style_name}.tex_t",
+            Path(app.srcdir) / f"{tp_style_name}.tex",
+            pkg_dir / "latex_styles" / "title_page" / f"{tp_style_name}.tex_t"
+        ])
         
         tp_raw_content = None
         for p in tp_paths_to_check:
