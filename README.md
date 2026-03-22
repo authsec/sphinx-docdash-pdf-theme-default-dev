@@ -191,6 +191,7 @@ docdash_needs_content_font = 'Stardos Stencil'
 docdash_needs_content_font_size = r'\fontsize{9pt}{9pt}\selectfont'
 docdash_needs_content_font_color = '#FFFFFF'
 
+# Works with custom-title style
 # Works print new dictionary config
 
 ```
