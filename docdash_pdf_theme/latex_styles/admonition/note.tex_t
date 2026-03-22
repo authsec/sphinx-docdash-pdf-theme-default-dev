@@ -1,4 +1,7 @@
 \newenvironment{ddadmonbox@<< admon_style_name >>}[2]{%
+    % 1. Capture the after-skip parameter into a local macro before the end block!
+    \def\ddadmonafterskip{\csname ddadmon@#1@afterskip\endcsname}%
+    %
     \vspace{\csname ddadmon@#1@beforeskip\endcsname}%
     \begin{tikzpicture}
         \node[
@@ -14,5 +17,5 @@
 }{%
         \egroup;
     \end{tikzpicture}
-    \vspace{\csname ddadmon@#1@afterskip\endcsname}%
+    \par\vspace{\ddadmonafterskip}% <--- 2. Call the local macro here!
 }
