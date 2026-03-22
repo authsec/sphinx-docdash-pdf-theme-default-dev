@@ -18,7 +18,7 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.162"
+__version__ = "0.1.163"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 # This is the absolute last-resort fallback if a user requests a style that does not exist,
@@ -308,10 +308,17 @@ def process_needs_ast(app, doctree, docname):
 
         title = ''
         need_type = 'generic'
+        
+        # Safely extract the need type directly from the AST classes!
+        for c in node.get('classes', []):
+            if c.startswith('needs_type_'):
+                need_type = c.replace('needs_type_', '').lower()
+                break
+
         if hasattr(app.env, 'needs_all_needs') and nid in app.env.needs_all_needs:
             title = app.env.needs_all_needs[nid].get('title', '')
-            # Force lowercase just in case the user configured mixed-case directives
-            need_type = app.env.needs_all_needs[nid].get('type', 'generic').lower()
+            if need_type == 'generic':
+                need_type = app.env.needs_all_needs[nid].get('type', 'generic').lower()
 
         # SANITIZER to absolutely nuke any possibility of a pgfkeys runaway paragraph
         def esc(s):
