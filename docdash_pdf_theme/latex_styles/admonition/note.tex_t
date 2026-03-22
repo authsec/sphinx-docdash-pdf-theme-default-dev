@@ -2,29 +2,42 @@
 \expandafter\newsavebox\csname ddadmonbox@<< admon_style_name >>@box\endcsname
 
 \newenvironment{ddadmonbox@<< admon_style_name >>}[2]{%
-    % 1. Masquerade as a tcolorbox by locally incrementing the nesting layer!
-    \advance\value{tcblayer} by 1\relax
-    %
     \edef\ddadmonafterskip{\csname ddadmon@#1@afterskip\endcsname}%
     \edef\ddadmontitlebg{ddadmon@#1@titlebg}%
-    % 2. Select alternating background based on the new layer depth
-    \ifodd\value{tcblayer}%
+    
+    % 1. Save the current global tcblayer locally
+    \edef\savedtcblayer{\the\value{tcblayer}}%
+    
+    % 2. Pick color based on a simulated increment
+    \ifodd\numexpr\savedtcblayer+1\relax
         \edef\ddadmoncontentbg{ddadmon@#1@contentbg}%
     \else
         \edef\ddadmoncontentbg{ddadmon@#1@contentbgnested}%
     \fi
-    %
+    
     \par\vspace{\csname ddadmon@#1@beforeskip\endcsname}%
     \noindent
     % 3. Pre-render all content inside a safe memory box!
     \begin{lrbox}{\csname ddadmonbox@<< admon_style_name >>@box\endcsname}%
         \begin{minipage}{\dimexpr\linewidth-3em\relax}% Width minus padding
+            
+            % 4. Cap tcblayer at 0 or 1 inside the minipage to prevent 4-layer footnote crash!
+            \ifodd\numexpr\savedtcblayer+1\relax
+                \setcounter{tcblayer}{1}% Next nested tcolorbox becomes Even
+            \else
+                \setcounter{tcblayer}{0}% Next nested tcolorbox becomes Odd
+            \fi
+            
             \textbf{\color{\ddadmontitlebg}{\csname ddadmon@#1@iconsize\endcsname\csname ddadmon@#1@icon\endcsname}\quad#2}
             \par\vspace{0.5em}\color{ddadmon@#1@contentfg}%
 }{%
         \end{minipage}%
     \end{lrbox}%
-    % 4. Paint the pre-rendered box inside TikZ (No nesting crashes!)
+    
+    % 5. Restore the global tcblayer state
+    \setcounter{tcblayer}{\savedtcblayer}%
+    
+    % 6. Paint the pre-rendered box inside TikZ (No nesting crashes!)
     \begin{tikzpicture}
         \node[
             draw=\ddadmontitlebg, 
