@@ -1,21 +1,29 @@
+% Create a unique memory box for this specific style
+\expandafter\newsavebox\csname ddadmonbox@<< admon_style_name >>@box\endcsname
+
 \newenvironment{ddadmonbox@<< admon_style_name >>}[2]{%
-    % 1. Use \edef to instantly evaluate and freeze the skip value!
     \edef\ddadmonafterskip{\csname ddadmon@#1@afterskip\endcsname}%
-    %
-    \vspace{\csname ddadmon@#1@beforeskip\endcsname}%
+    \edef\ddadmontitlebg{ddadmon@#1@titlebg}%
+    \edef\ddadmoncontentbg{ddadmon@#1@contentbg}%
+    \par\vspace{\csname ddadmon@#1@beforeskip\endcsname}%
+    \noindent
+    % 1. Pre-render all content inside a safe memory box!
+    \begin{lrbox}{\csname ddadmonbox@<< admon_style_name >>@box\endcsname}%
+        \begin{minipage}{\dimexpr\linewidth-3em\relax}% Width minus padding
+            \textbf{\color{\ddadmontitlebg}{\csname ddadmon@#1@iconsize\endcsname\csname ddadmon@#1@icon\endcsname}\quad#2}
+            \par\vspace{0.5em}\color{ddadmon@#1@contentfg}%
+}{%
+        \end{minipage}%
+    \end{lrbox}%
+    % 2. Paint the pre-rendered box inside TikZ (No nesting crashes!)
     \begin{tikzpicture}
         \node[
-            draw=ddadmon@#1@titlebg, 
+            draw=\ddadmontitlebg, 
             line width=2pt, 
-            fill=ddadmon@#1@contentbg, 
+            fill=\ddadmoncontentbg, 
             inner sep=1em, 
-            text width=\linewidth-2.5em,
             rounded corners=5mm
-        ] (box) \bgroup
-        \textbf{\color{ddadmon@#1@titlebg}{\csname ddadmon@#1@iconsize\endcsname\csname ddadmon@#1@icon\endcsname}\quad#2}
-        \par\vspace{0.5em}\color{ddadmon@#1@contentfg}%
-}{%
-        \egroup;
+        ] (box) {\usebox{\csname ddadmonbox@<< admon_style_name >>@box\endcsname}};
     \end{tikzpicture}
-    \par\vspace{\ddadmonafterskip}% <--- Now uses the safely frozen string!
+    \par\vspace{\ddadmonafterskip}%
 }
