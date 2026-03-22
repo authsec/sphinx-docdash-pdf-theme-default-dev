@@ -1,0 +1,18 @@
+\newenvironment{ddadmonbox@<< admon_style_name >>}[2]{%
+    \vspace{\csname ddadmon@#1@beforeskip\endcsname}%
+    \begin{tikzpicture}
+        \node[
+            draw=\csname ddadmon@#1@titlebg\endcsname, 
+            line width=2pt, 
+            fill=\csname ddadmon@#1@contentbg\endcsname, 
+            inner sep=1em, 
+            text width=\linewidth-2.5em,
+            rounded corners=5mm
+        ] (box) \bgroup
+        \textbf{\color{\csname ddadmon@#1@titlebg\endcsname}{\csname ddadmon@#1@iconsize\endcsname\csname ddadmon@#1@icon\endcsname}\quad#2}
+        \par\vspace{0.5em}\color{\csname ddadmon@#1@contentfg\endcsname}%
+}{%
+        \egroup;
+    \end{tikzpicture}
+    \vspace{\csname ddadmon@#1@afterskip\endcsname}%
+}

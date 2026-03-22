@@ -462,7 +462,7 @@
 \makeatother
 
 %% ----------------------------------------------------
-%% DYNAMIC TCOLORBOX SPHINX ADMONITIONS
+%% DYNAMIC SPHINX ADMONITION ROUTER
 %% ----------------------------------------------------
 
 %% 1. Register generated colors and fonts
@@ -486,33 +486,34 @@
 <% endfor %>
 
 \makeatletter
-%% 2. Define the reusable tcolorbox styles using dynamic lookups
-<% if docdash_loaded_admon_styles %>
-\tcbset{
-  <% for style_name, style_content in docdash_loaded_admon_styles.items() %>
-  docdashadmonstyle<< style_name >>/.style={<< style_content >>},
-  <% endfor %>
-  <% for t in admon_types %>
-  docdashadmonalias<< t >>/.style={docdashadmonstyle<< docdash_admon_styles_map[t] >>={#1}}<% if not loop.last %>,<% endif %>
-  <% endfor %>
-}
-<% endif %>
+%% 2. Define the reusable Admonition environments (Users define \newenvironment{ddadmonbox@stylename}[2])
+<% for style_name, style_content in docdash_loaded_admon_styles.items() %>
+<< style_content >>
+<% endfor %>
 
-%% 3. Wrapper environment
-\newtcolorbox{docdashadmonbox}[2]{
-    docdashadmonalias#1=#1,
-    title={#2}
-}
+%% 3. Map admonition types to their assigned structural styles
+<% for t in admon_types %>
+\expandafter\def\csname ddadmonstylemap@<< t >>\endcsname{<< docdash_admon_styles_map[t] >>}
+<% endfor %>
 
-%% 4. Hook into Sphinx's master admonition macro
-\renewenvironment{sphinxadmonition}[2]{%
-    \@ifundefined{ddadmon@#1@icon}{%
-        \begin{docdashadmonbox}{generic}{#2}%
-    }{%
-        \begin{docdashadmonbox}{#1}{#2}%
-    }%
+%% 4. Hook into Sphinx's master admonition macro with a Dynamic Environment Router
+\newenvironment{docdashadmonboxrouter}[2]{%
+    \def\myadmontype{#1}%
+    \@ifundefined{ddadmonstylemap@\myadmontype}{\def\myadmontype{generic}}{}%
+    % Look up the structural geometry mapped to this admonition type
+    \edef\mystyle{\csname ddadmonstylemap@\myadmontype\endcsname}%
+    % Save the correct ending command before opening the scope
+    \def\endrouter{\csname endddadmonbox@\mystyle\endcsname}%
+    % Invoke the exact environment, passing it the type and title for color extraction
+    \csname ddadmonbox@\mystyle\endcsname{\myadmontype}{#2}%
 }{%
-  \end{docdashadmonbox}%
+    \endrouter
+}
+
+\renewenvironment{sphinxadmonition}[2]{%
+    \begin{docdashadmonboxrouter}{#1}{#2}%
+}{%
+  \end{docdashadmonboxrouter}%
 }
 \makeatother
 
