@@ -1,0 +1,2 @@
+attach boxed title to top left={xshift=0pt, yshift=0pt},
+boxed title style={empty, left=1ex, right=0pt}
