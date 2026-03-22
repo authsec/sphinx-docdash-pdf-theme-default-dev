@@ -2,12 +2,21 @@
 \expandafter\newsavebox\csname ddadmonbox@<< admon_style_name >>@box\endcsname
 
 \newenvironment{ddadmonbox@<< admon_style_name >>}[2]{%
+    % 1. Masquerade as a tcolorbox by locally incrementing the nesting layer!
+    \advance\value{tcblayer} by 1\relax
+    %
     \edef\ddadmonafterskip{\csname ddadmon@#1@afterskip\endcsname}%
     \edef\ddadmontitlebg{ddadmon@#1@titlebg}%
-    \edef\ddadmoncontentbg{ddadmon@#1@contentbg}%
+    % 2. Select alternating background based on the new layer depth
+    \ifodd\value{tcblayer}%
+        \edef\ddadmoncontentbg{ddadmon@#1@contentbg}%
+    \else
+        \edef\ddadmoncontentbg{ddadmon@#1@contentbgnested}%
+    \fi
+    %
     \par\vspace{\csname ddadmon@#1@beforeskip\endcsname}%
     \noindent
-    % 1. Pre-render all content inside a safe memory box!
+    % 3. Pre-render all content inside a safe memory box!
     \begin{lrbox}{\csname ddadmonbox@<< admon_style_name >>@box\endcsname}%
         \begin{minipage}{\dimexpr\linewidth-3em\relax}% Width minus padding
             \textbf{\color{\ddadmontitlebg}{\csname ddadmon@#1@iconsize\endcsname\csname ddadmon@#1@icon\endcsname}\quad#2}
@@ -15,7 +24,7 @@
 }{%
         \end{minipage}%
     \end{lrbox}%
-    % 2. Paint the pre-rendered box inside TikZ (No nesting crashes!)
+    % 4. Paint the pre-rendered box inside TikZ (No nesting crashes!)
     \begin{tikzpicture}
         \node[
             draw=\ddadmontitlebg, 
