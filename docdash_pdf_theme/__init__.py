@@ -10,29 +10,13 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.139"
+__version__ = "0.1.140"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
-# These are used if the user does not provide a custom {style_name}.tex file in their confdir.
+# This is the absolute last-resort fallback if a user requests a style that does not exist,
+# and the package's latex_styles folder is somehow missing.
 DEFAULT_TITLE_STYLES = {
-    'classic': r"attach boxed title to top left={xshift=0pt, yshift=0pt}, boxed title style={empty, left=1ex, right=0pt}",
-    'floating': r"""attach boxed title to top left={xshift=-4mm,yshift=-0.5mm},
-varwidth boxed title=0.7\linewidth,
-boxed title style={empty,arc=0pt,outer arc=0pt,boxrule=0pt},
-underlay boxed title={
-  \fill[#1] (title.north west) -- (title.north east) -- +(\tcboxedtitleheight-1mm,-\tcboxedtitleheight+1mm) -- ([xshift=4mm,yshift=0.5mm]frame.north east) -- +(0mm,-1mm) -- (title.south west) -- cycle;
-  \fill[#1!50!black] ([yshift=-0.5mm]frame.north west) -- +(-0.4,0) -- +(0,-0.3) -- cycle;
-  \fill[#1!50!black] ([yshift=-0.5mm]frame.north east) -- +(0,-0.3) -- +(0.4,0) -- cycle;
-}""",
-    'ribbon': r"""attach boxed title to top left={xshift=1cm,yshift*=1mm-\tcboxedtitleheight},
-varwidth boxed title*=-3cm,
-boxed title style={
-  frame code={
-    \path[fill=tcbcolback!30!black] ([yshift=-1mm,xshift=-1mm]frame.north west) arc[start angle=0,end angle=180,radius=1mm] ([yshift=-1mm,xshift=1mm]frame.north east) arc[start angle=180,end angle=0,radius=1mm];
-    \path[left color=tcbcolback!60!black,right color=tcbcolback!60!black, middle color=tcbcolback!80!black] ([xshift=-2mm]frame.north west) -- ([xshift=2mm]frame.north east) [rounded corners=1mm]-- ([xshift=1mm,yshift=-1mm]frame.north east) -- (frame.south east) -- (frame.south west) -- ([xshift=-1mm,yshift=-1mm]frame.north west) [sharp corners]-- cycle;
-  },
-  interior engine=empty
-}"""
+    'classic': r"attach boxed title to top left={xshift=0pt, yshift=0pt}, boxed title style={empty, left=1ex, right=0pt}"
 }
 
 def get_safe_filename(name: str) -> str:
@@ -553,7 +537,7 @@ def config_inited(app, config):
 
         # --- CONTAINERS ---
         safe_containers = {}
-        loaded_title_styles = {}
+        requested_styles = set()
         
         for c_name, c_conf in containers.items():
             # Sanitize the class name for LaTeX variables
@@ -575,33 +559,8 @@ def config_inited(app, config):
             c_conf.setdefault('title_icon_font_size', '')
             c_conf.setdefault('content_font_size', r'\normalsize')
             
-            # TITLE STYLE RESOLUTION ENGINE
             style_name = c_conf.get('title_style', 'classic')
-            if style_name not in loaded_title_styles:
-                # 1. Try to load from user's confdir
-                custom_style_path = Path(app.confdir) / f"{style_name}.tex"
-                if custom_style_path.exists():
-                    raw_content = custom_style_path.read_text(encoding='utf-8')
-                # 2. Try to load from internal default dict
-                elif style_name in DEFAULT_TITLE_STYLES:
-                    raw_content = DEFAULT_TITLE_STYLES[style_name]
-                else:
-                    logger.warning(f"[DocDash] Container title style '{style_name}' not found as '{style_name}.tex'. Falling back to 'classic'.")
-                    style_name = 'classic'
-                    if 'classic' not in loaded_title_styles:
-                        raw_content = DEFAULT_TITLE_STYLES['classic']
-                        
-                # Compress the raw content into a single line to prevent pgfkeys runaway argument errors
-                if style_name not in loaded_title_styles:
-                    # Strip LaTeX comments (anything after an unescaped %) before flattening
-                    clean_lines = []
-                    for line in raw_content.splitlines():
-                        # Remove comments
-                        clean_line = re.sub(r'(?<!\\)%.*', '', line).strip()
-                        if clean_line:
-                            clean_lines.append(clean_line)
-                    loaded_title_styles[style_name] = " ".join(clean_lines)
-                        
+            requested_styles.add(style_name)
             c_conf['title_style'] = style_name
             
             # Prevent string conversion bugs (e.g. "False" instead of False)
@@ -623,7 +582,6 @@ def config_inited(app, config):
             safe_containers[safe_name] = c_conf
             
         template_vars['docdash_containers'] = safe_containers
-        template_vars['docdash_loaded_title_styles'] = loaded_title_styles
 
         # --- GLOBALS ---
         template_vars['docdash_show_release'] = getattr(config, 'docdash_show_release', True)
@@ -997,6 +955,40 @@ def config_inited(app, config):
         else:
             base_raise = manual_raise if manual_raise is not None else '0pt'
             template_vars['docdash_needs_title_icon_raise'] = rf'\dimexpr {base_raise} + {offset} \relax'
+
+        # --- TITLE STYLE RESOLUTION ENGINE ---
+        loaded_title_styles = {}
+        for style_name in requested_styles:
+            user_t = Path(app.confdir) / f"{style_name}.tex_t"
+            user_tex = Path(app.confdir) / f"{style_name}.tex"
+            pkg_t = pkg_dir / "latex_styles" / f"{style_name}.tex_t"
+            
+            if user_t.exists():
+                raw_content = user_t.read_text(encoding='utf-8')
+            elif user_tex.exists():
+                raw_content = user_tex.read_text(encoding='utf-8')
+            elif pkg_t.exists():
+                raw_content = pkg_t.read_text(encoding='utf-8')
+            elif style_name in DEFAULT_TITLE_STYLES:
+                raw_content = DEFAULT_TITLE_STYLES[style_name]
+            else:
+                logger.warning(f"[DocDash] Container title style '{style_name}' not found. Falling back to 'classic'.")
+                raw_content = DEFAULT_TITLE_STYLES['classic']
+                style_name = 'classic'
+                
+            # Render custom snippet through Jinja!
+            s_template = env.from_string(raw_content)
+            rendered_content = s_template.render(**template_vars)
+            
+            # Flatten and Strip LaTeX Comments
+            clean_lines = []
+            for line in rendered_content.splitlines():
+                clean_line = re.sub(r'(?<!\\)%.*', '', line).strip()
+                if clean_line:
+                    clean_lines.append(clean_line)
+            loaded_title_styles[style_name] = " ".join(clean_lines)
+            
+        template_vars['docdash_loaded_title_styles'] = loaded_title_styles
 
         template_vars['v'] = template_vars
         my_preamble = template.render(**template_vars)
