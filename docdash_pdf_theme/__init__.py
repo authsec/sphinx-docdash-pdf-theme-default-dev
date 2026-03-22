@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.138"
+__version__ = "0.1.139"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 # These are used if the user does not provide a custom {style_name}.tex file in their confdir.
@@ -302,7 +302,7 @@ def process_containers_ast(app, doctree, docname):
         node.replace_self(wrapper)
 
 def process_epigraph_ast(app, doctree, docname):
-    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, dynamically determining level."""
+    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, handling part/chapter preambles."""
     if getattr(app.builder, 'format', '') != 'latex':
         return
         
@@ -593,8 +593,14 @@ def config_inited(app, config):
                         
                 # Compress the raw content into a single line to prevent pgfkeys runaway argument errors
                 if style_name not in loaded_title_styles:
-                    flattened = " ".join(line.strip() for line in raw_content.splitlines() if line.strip())
-                    loaded_title_styles[style_name] = flattened
+                    # Strip LaTeX comments (anything after an unescaped %) before flattening
+                    clean_lines = []
+                    for line in raw_content.splitlines():
+                        # Remove comments
+                        clean_line = re.sub(r'(?<!\\)%.*', '', line).strip()
+                        if clean_line:
+                            clean_lines.append(clean_line)
+                    loaded_title_styles[style_name] = " ".join(clean_lines)
                         
             c_conf['title_style'] = style_name
             
