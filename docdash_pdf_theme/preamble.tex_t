@@ -502,10 +502,11 @@
     \@ifundefined{ddadmonstylemap@\myadmontype}{\def\myadmontype{generic}}{}%
     % Look up the structural geometry mapped to this admonition type
     \edef\mystyle{\csname ddadmonstylemap@\myadmontype\endcsname}%
-    % Save the correct ending command before opening the scope
-    \def\endrouter{\csname endddadmonbox@\mystyle\endcsname}%
-    % Invoke the exact environment, passing it the type and title for color extraction
-    \csname ddadmonbox@\mystyle\endcsname{\myadmontype}{#2}%
+    % Dynamically save the correct \end{...} command
+    \edef\endrouter{\noexpand\end{ddadmonbox@\mystyle}}%
+    % Forcefully expand the style and type strings BEFORE starting the environment
+    % to protect the variables from dying during tcolorbox rendering!
+    \begingroup\edef\x{\endgroup\noexpand\begin{ddadmonbox@\mystyle}{\myadmontype}}\x{#2}%
 }{%
     \endrouter
 }

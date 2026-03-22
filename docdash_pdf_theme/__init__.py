@@ -18,7 +18,7 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.152"
+__version__ = "0.1.153"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 DEFAULT_TITLE_STYLES = {
