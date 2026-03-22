@@ -10,7 +10,30 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.135"
+__version__ = "0.1.136"
+
+# --- DEFAULT CONTAINER TITLE STYLES ---
+# These are used if the user does not provide a custom {style_name}.tex file in their confdir.
+DEFAULT_TITLE_STYLES = {
+    'classic': r"attach boxed title to top left={xshift=0pt, yshift=0pt}, boxed title style={empty, left=1ex, right=0pt}",
+    'floating': r"""attach boxed title to top left={xshift=-4mm,yshift=-0.5mm},
+varwidth boxed title=0.7\linewidth,
+boxed title style={empty,arc=0pt,outer arc=0pt,boxrule=0pt},
+underlay boxed title={
+  \fill[#1] (title.north west) -- (title.north east) -- +(\tcboxedtitleheight-1mm,-\tcboxedtitleheight+1mm) -- ([xshift=4mm,yshift=0.5mm]frame.north east) -- +(0mm,-1mm) -- (title.south west) -- cycle;
+  \fill[#1!50!black] ([yshift=-0.5mm]frame.north west) -- +(-0.4,0) -- +(0,-0.3) -- cycle;
+  \fill[#1!50!black] ([yshift=-0.5mm]frame.north east) -- +(0,-0.3) -- +(0.4,0) -- cycle;
+}""",
+    'ribbon': r"""attach boxed title to top left={xshift=1cm,yshift*=1mm-\tcboxedtitleheight},
+varwidth boxed title*=-3cm,
+boxed title style={
+  frame code={
+    \path[fill=tcbcolback!30!black] ([yshift=-1mm,xshift=-1mm]frame.north west) arc[start angle=0,end angle=180,radius=1mm] ([yshift=-1mm,xshift=1mm]frame.north east) arc[start angle=180,end angle=0,radius=1mm];
+    \path[left color=tcbcolback!60!black,right color=tcbcolback!60!black, middle color=tcbcolback!80!black] ([xshift=-2mm]frame.north west) -- ([xshift=2mm]frame.north east) [rounded corners=1mm]-- ([xshift=1mm,yshift=-1mm]frame.north east) -- (frame.south east) -- (frame.south west) -- ([xshift=-1mm,yshift=-1mm]frame.north west) [sharp corners]-- cycle;
+  },
+  interior engine=empty
+}"""
+}
 
 def get_safe_filename(name: str) -> str:
     """Creates a filesystem-safe string from a project name."""
@@ -279,7 +302,7 @@ def process_containers_ast(app, doctree, docname):
         node.replace_self(wrapper)
 
 def process_epigraph_ast(app, doctree, docname):
-    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, dynamically determining level."""
+    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, handling part/chapter preambles."""
     if getattr(app.builder, 'format', '') != 'latex':
         return
         
@@ -530,6 +553,8 @@ def config_inited(app, config):
 
         # --- CONTAINERS ---
         safe_containers = {}
+        loaded_title_styles = {}
+        
         for c_name, c_conf in containers.items():
             # Sanitize the class name for LaTeX variables
             safe_name = re.sub(r'[^a-zA-Z]', '', c_name)
@@ -549,7 +574,24 @@ def config_inited(app, config):
             c_conf.setdefault('title_font_size', r'\large\bfseries')
             c_conf.setdefault('title_icon_font_size', '')
             c_conf.setdefault('content_font_size', r'\normalsize')
-            c_conf.setdefault('title_style', 'classic')
+            
+            # TITLE STYLE RESOLUTION ENGINE
+            style_name = c_conf.get('title_style', 'classic')
+            if style_name not in loaded_title_styles:
+                # 1. Try to load from user's confdir
+                custom_style_path = Path(app.confdir) / f"{style_name}.tex"
+                if custom_style_path.exists():
+                    loaded_title_styles[style_name] = custom_style_path.read_text(encoding='utf-8')
+                # 2. Try to load from internal default dict
+                elif style_name in DEFAULT_TITLE_STYLES:
+                    loaded_title_styles[style_name] = DEFAULT_TITLE_STYLES[style_name]
+                else:
+                    logger.warning(f"[DocDash] Container title style '{style_name}' not found as '{style_name}.tex'. Falling back to 'classic'.")
+                    style_name = 'classic'
+                    if 'classic' not in loaded_title_styles:
+                        loaded_title_styles['classic'] = DEFAULT_TITLE_STYLES['classic']
+                        
+            c_conf['title_style'] = style_name
             
             # Prevent string conversion bugs (e.g. "False" instead of False)
             frame_val = c_conf.get('container_frame', True)
@@ -570,6 +612,7 @@ def config_inited(app, config):
             safe_containers[safe_name] = c_conf
             
         template_vars['docdash_containers'] = safe_containers
+        template_vars['docdash_loaded_title_styles'] = loaded_title_styles
 
         # --- GLOBALS ---
         template_vars['docdash_show_release'] = getattr(config, 'docdash_show_release', True)
