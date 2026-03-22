@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.137"
+__version__ = "0.1.138"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 # These are used if the user does not provide a custom {style_name}.tex file in their confdir.
@@ -302,7 +302,7 @@ def process_containers_ast(app, doctree, docname):
         node.replace_self(wrapper)
 
 def process_epigraph_ast(app, doctree, docname):
-    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, handling part/chapter preambles."""
+    """Replaces Sphinx epigraph nodes with KOMA-Script dictum macros, dynamically determining level."""
     if getattr(app.builder, 'format', '') != 'latex':
         return
         

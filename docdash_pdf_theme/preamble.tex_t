@@ -372,7 +372,6 @@
 }
 \makeatother
 
-
 %% ----------------------------------------------------
 %% DYNAMIC HEADING ALIGNMENT & MARGIN FORMATTING
 %% ----------------------------------------------------
@@ -627,13 +626,7 @@
 
 <% if docdash_loaded_title_styles %>
 \makeatletter
-\tcbset{
-  <% for style_name, style_content in docdash_loaded_title_styles.items() %>
-  docdash<< style_name >>style/.style={
-    << style_content >>
-  }<% if not loop.last %>,<% endif %>
-  <% endfor %>
-}
+\tcbset{<% for style_name, style_content in docdash_loaded_title_styles.items() %>docdash<< style_name >>style/.style={<< style_content >>}<% if not loop.last %>,<% endif %><% endfor %>}
 \makeatother
 <% endif %>
 
