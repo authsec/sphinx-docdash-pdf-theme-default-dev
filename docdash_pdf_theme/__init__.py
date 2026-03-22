@@ -10,7 +10,7 @@ from docutils.parsers.rst import Directive, directives
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.136"
+__version__ = "0.1.137"
 
 # --- DEFAULT CONTAINER TITLE STYLES ---
 # These are used if the user does not provide a custom {style_name}.tex file in their confdir.
@@ -581,15 +581,20 @@ def config_inited(app, config):
                 # 1. Try to load from user's confdir
                 custom_style_path = Path(app.confdir) / f"{style_name}.tex"
                 if custom_style_path.exists():
-                    loaded_title_styles[style_name] = custom_style_path.read_text(encoding='utf-8')
+                    raw_content = custom_style_path.read_text(encoding='utf-8')
                 # 2. Try to load from internal default dict
                 elif style_name in DEFAULT_TITLE_STYLES:
-                    loaded_title_styles[style_name] = DEFAULT_TITLE_STYLES[style_name]
+                    raw_content = DEFAULT_TITLE_STYLES[style_name]
                 else:
                     logger.warning(f"[DocDash] Container title style '{style_name}' not found as '{style_name}.tex'. Falling back to 'classic'.")
                     style_name = 'classic'
                     if 'classic' not in loaded_title_styles:
-                        loaded_title_styles['classic'] = DEFAULT_TITLE_STYLES['classic']
+                        raw_content = DEFAULT_TITLE_STYLES['classic']
+                        
+                # Compress the raw content into a single line to prevent pgfkeys runaway argument errors
+                if style_name not in loaded_title_styles:
+                    flattened = " ".join(line.strip() for line in raw_content.splitlines() if line.strip())
+                    loaded_title_styles[style_name] = flattened
                         
             c_conf['title_style'] = style_name
             
