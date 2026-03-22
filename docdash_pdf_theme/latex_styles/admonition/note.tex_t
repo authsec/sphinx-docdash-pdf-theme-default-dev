@@ -1,21 +1,21 @@
 \newenvironment{ddadmonbox@<< admon_style_name >>}[2]{%
-    % 1. Capture the after-skip parameter into a local macro before the end block!
-    \def\ddadmonafterskip{\csname ddadmon@#1@afterskip\endcsname}%
+    % 1. Use \edef to instantly evaluate and freeze the skip value!
+    \edef\ddadmonafterskip{\csname ddadmon@#1@afterskip\endcsname}%
     %
     \vspace{\csname ddadmon@#1@beforeskip\endcsname}%
     \begin{tikzpicture}
         \node[
-            draw=ddadmon@#1@titlebg,        % <-- Raw string for color!
+            draw=ddadmon@#1@titlebg, 
             line width=2pt, 
-            fill=ddadmon@#1@contentbg,      % <-- Raw string for color!
+            fill=ddadmon@#1@contentbg, 
             inner sep=1em, 
             text width=\linewidth-2.5em,
             rounded corners=5mm
         ] (box) \bgroup
         \textbf{\color{ddadmon@#1@titlebg}{\csname ddadmon@#1@iconsize\endcsname\csname ddadmon@#1@icon\endcsname}\quad#2}
-        \par\vspace{0.5em}\color{ddadmon@#1@contentfg}% <-- Raw string for color!
+        \par\vspace{0.5em}\color{ddadmon@#1@contentfg}%
 }{%
         \egroup;
     \end{tikzpicture}
-    \par\vspace{\ddadmonafterskip}% 
+    \par\vspace{\ddadmonafterskip}% <--- Now uses the safely frozen string!
 }
