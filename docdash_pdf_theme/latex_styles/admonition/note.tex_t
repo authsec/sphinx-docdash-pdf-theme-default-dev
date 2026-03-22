@@ -5,17 +5,17 @@
     \vspace{\csname ddadmon@#1@beforeskip\endcsname}%
     \begin{tikzpicture}
         \node[
-            draw=\csname ddadmon@#1@titlebg\endcsname, 
+            draw=ddadmon@#1@titlebg,        % <-- Raw string for color!
             line width=2pt, 
-            fill=\csname ddadmon@#1@contentbg\endcsname, 
+            fill=ddadmon@#1@contentbg,      % <-- Raw string for color!
             inner sep=1em, 
             text width=\linewidth-2.5em,
             rounded corners=5mm
         ] (box) \bgroup
-        \textbf{\color{\csname ddadmon@#1@titlebg\endcsname}{\csname ddadmon@#1@iconsize\endcsname\csname ddadmon@#1@icon\endcsname}\quad#2}
-        \par\vspace{0.5em}\color{\csname ddadmon@#1@contentfg\endcsname}%
+        \textbf{\color{ddadmon@#1@titlebg}{\csname ddadmon@#1@iconsize\endcsname\csname ddadmon@#1@icon\endcsname}\quad#2}
+        \par\vspace{0.5em}\color{ddadmon@#1@contentfg}% <-- Raw string for color!
 }{%
         \egroup;
     \end{tikzpicture}
-    \par\vspace{\ddadmonafterskip}% <--- 2. Call the local macro here!
+    \par\vspace{\ddadmonafterskip}% 
 }
