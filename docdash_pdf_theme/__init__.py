@@ -7,6 +7,7 @@ from jinja2 import Environment
 from sphinx.writers.latex import LaTeXTranslator
 from docutils import nodes
 from docutils.parsers.rst import Directive, directives
+from sphinx.errors import ExtensionError
 
 # Explicitly import the utilities so they are exposed to the user's conf.py
 from .utils import (
@@ -16,77 +17,13 @@ from .utils import (
     hex_to_cmyk_string
 )
 
+# Import our extracted default configurations
+from .default_config import DEFAULT_NEEDS_CONFIG, DEFAULT_ADMONITION_CONFIG
+
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.164"
+__version__ = "0.1.165"
 
-# --- DEFAULT CONTAINER TITLE STYLES ---
-# This is the absolute last-resort fallback if a user requests a style that does not exist,
-# and the package's latex_styles/container_title_style folder is somehow missing.
-DEFAULT_TITLE_STYLES = {
-    'classic': r"attach boxed title to top left={xshift=0pt, yshift=0pt}, boxed title style={empty, left=1ex, right=0pt}"
-}
-
-# --- DEFAULT ADMONITION STYLE ---
-# Last resort fallback if latex_styles/admonition/default.tex_t is missing.
-DEFAULT_ADMONITION_STYLE = r"""
-\newtcolorbox{ddadmonbox@<< admon_style_name >>}[2]{
-    enhanced, breakable, parbox=false, sharp corners,
-    before skip=\csname ddadmon@#1@beforeskip\endcsname,
-    after skip=\csname ddadmon@#1@afterskip\endcsname,
-    attach boxed title to top left={xshift=0.2pt, yshift=0.2pt},
-    fonttitle=\csname ddadmon@#1@titlefont\endcsname,
-    coltitle=ddadmon@#1@titlefg, colback=ddadmon@#1@contentbg,
-    code={\ifodd\value{tcblayer}\else \tcbset{colback=ddadmon@#1@contentbgnested}\fi},
-    coltext=ddadmon@#1@contentfg, fontupper=\csname ddadmon@#1@contentfont\endcsname,
-    boxed title style={empty, left=1ex, right=0pt},
-    toprule=0pt, rightrule=0pt, leftrule=1.5pt, bottomrule=1.5pt,
-    underlay boxed title={
-        \coordinate (text_box_end) at ([xshift=1ex]title.east);
-        \coordinate (icon_box_start) at (text_box_end);
-        \coordinate (icon_box_end) at ([xshift=\csname ddadmon@#1@iconpad\endcsname]icon_box_start);
-        \coordinate (dddeco_center) at ($ (icon_box_start)!.5!(icon_box_end) $);
-        \coordinate (T_NW) at ([yshift=-.5\pgflinewidth]title.north west);
-        \coordinate (T_NE) at ([yshift=-.5\pgflinewidth]text_box_end |- title.north);
-        \coordinate (I_NW) at ([yshift=-.5\pgflinewidth]icon_box_start |- title.north);
-        \coordinate (I_NE) at ([yshift=-.5\pgflinewidth]icon_box_end |- title.north);
-        \fill[fill=ddadmon@#1@titlebg] (text_box_end |- title.south) -- (title.south west) [rounded corners=1mm] -- (T_NW) [sharp corners] -- (T_NE) -- cycle;
-        \draw[ddadmon@#1@titlebg, line width=0.4pt] (text_box_end |- title.south) -- (title.south west) [rounded corners=1mm] -- (T_NW) [sharp corners] -- (T_NE) -- cycle;
-        \fill[fill=ddadmon@#1@iconboxbg] (icon_box_start |- title.south) -- (I_NW) [rounded corners=1mm] -- (I_NE) [sharp corners] -- (icon_box_end |- title.south) -- cycle;
-        \draw[ddadmon@#1@titlebg, line width=0.4pt] (icon_box_start |- title.south) -- (I_NW) [rounded corners=1mm] -- (I_NE) [sharp corners] -- (icon_box_end |- title.south) -- cycle;
-        \path(dddeco_center) node[inner sep=0pt] (ddicon) {{\csname ddadmon@#1@iconsize\endcsname\color{ddadmon@#1@iconfg}\csname ddadmon@#1@icon\endcsname}};
-        \coordinate (dddeco) at ([xshift=\csname ddadmon@#1@decospace\endcsname]icon_box_end);
-        \foreach \i [evaluate=\i as \ni using \i+2, count=\xi from 0, evaluate=\xi as \op using 1-2*\xi/10] in {0,1,2,3}{
-            \draw[line width=.5mm, ddadmon@#1@titlebg, opacity=\op] ([xshift=\i mm]dddeco |- title.north) -- ([xshift=\ni mm]dddeco |- title.east) -- ([xshift=\i mm]dddeco |- title.south);
-        }
-    },
-    frame hidden,
-    borderline west={1.5pt}{0pt}{ddadmon@#1@titlebg}, 
-    borderline south={1.5pt}{0pt}{ddadmon@#1@titlebg},
-    overlay={\draw[line width=1.5pt, ddadmon@#1@titlebg] (frame.south east)--++(90:5mm);},
-    title={#2}
-}
-"""
-
-# --- DEFAULT NEED STYLE ---
-# Last resort fallback if latex_styles/need/default.tex_t is missing.
-DEFAULT_NEED_STYLE = r"""
-\newtcolorbox{ddneedbox@<< need_style_name >>}[2]{
-    skin=enhanced, breakable, parbox=false, sharp corners, boxrule=0.5pt,
-    before skip=\csname ddneed@#1@beforeskip\endcsname,
-    after skip=\csname ddneed@#1@afterskip\endcsname,
-    colframe=ddneed@#1@titlebg, colbacktitle=ddneed@#1@titlebg, coltitle=ddneed@#1@titlefg, fonttitle=\csname ddneed@#1@titlefont\endcsname,
-    colback=ddneed@#1@contentbg, colupper=ddneed@#1@metafg, fontupper=\csname ddneed@#1@metafont\endcsname,
-    collower=ddneed@#1@contentfg, fontlower=\csname ddneed@#1@contentfont\endcsname,
-    segmentation code={
-        \path[fill=ddneed@#1@metabg] (interior.north west) rectangle (segmentation.east);
-        \csname ddneed@#1@segstyle\endcsname
-    },
-    before upper={\let\toprule\empty\let\midrule\empty\let\bottomrule\empty\let\hline\empty\hypersetup{linkcolor=ddneed@#1@metafg,urlcolor=ddneed@#1@metafg,citecolor=ddneed@#1@metafg,filecolor=ddneed@#1@metafg}},
-    before lower={\hypersetup{linkcolor=ddneed@#1@contentfg,urlcolor=ddneed@#1@contentfg,citecolor=ddneed@#1@contentfg,filecolor=ddneed@#1@contentfg}},
-    title={{\csname ddneed@#1@iconcmd\endcsname #2}}
-}
-"""
 
 class StyleBoxDirective(Directive):
     """Custom directive to safely parse container styles and preserve capitalized titles."""
@@ -718,26 +655,6 @@ def config_inited(app, config):
                 template_vars[f'docdash_part_number_number_{prop}'] = template_vars.get(f'docdash_part_number_{prop}')
 
         # --- ADMONITIONS ---
-        generic_defaults = {
-            'title_icon': r'\textbf{i}',
-            'title_icon_color': '#FFFFFF',
-            'title_icon_size': '',
-            'title_icon_padding': '3ex',
-            'title_decoration_spacing': '2mm',
-            'title_font': '',
-            'title_font_color': '#FFFFFF',
-            'title_font_size': r'\large\bfseries',
-            'title_background_color': '#0092FA',
-            'title_icon_box_background_color': '#0092FA', 
-            'content_background_color': '#F8F9FA',
-            'content_background_color_nested': '#FFFFFF', 
-            'content_font': '',
-            'content_font_color': '#000000',
-            'content_font_size': r'\normalsize',
-            'before_skip': '2.2em plus 0.5em minus 0.5em',
-            'after_skip': '1.5em plus 0.5em minus 0.5em'
-        }
-
         admon_types = ['generic', 'admonition', 'note', 'warning', 'hint', 'danger', 'error', 'caution', 'tip', 'important', 'attention']
         template_vars['admon_types'] = admon_types
         
@@ -765,7 +682,7 @@ def config_inited(app, config):
                 
                 if val is None:
                     if t == 'generic':
-                        val = generic_defaults[p]
+                        val = DEFAULT_ADMONITION_CONFIG[p]
                     else:
                         val = template_vars[f'docdash_admonition_generic_{p}']
                 
@@ -800,28 +717,6 @@ def config_inited(app, config):
             'before_skip', 'after_skip'
         ]
         
-        needs_defaults = {
-            'title_font_size': r'\large\bfseries',
-            'title_color': '#FFFFFF',
-            'title_background_color': '#0092FA',
-            'title_icon': '',
-            'title_icon_size': '',
-            'title_icon_color': '#FFFFFF',
-            'title_icon_raise': '0pt',
-            'title_icon_raise_offset': '0pt',
-            'metadata_background_color': '#E9ECEF',
-            'metadata_font_size': r'\small',
-            'metadata_font_color': '#495057',
-            'metadata_key_color': '#212529',
-            'metadata_key_font_size': '',
-            'content_background_color': '#FFFFFF',
-            'content_font_size': r'\normalsize',
-            'content_font_color': '#000000',
-            'segmentation_style': 'solid',
-            'before_skip': '1.5em plus 0.5em minus 0.5em',
-            'after_skip': '1.5em plus 0.5em minus 0.5em'
-        }
-
         # 1. Identify all active need types (from sphinx-needs or explicit docdash config)
         need_types = ['generic']
         if hasattr(config, 'needs_types') and config.needs_types:
@@ -857,9 +752,9 @@ def config_inited(app, config):
                 if val is None:
                     # Dynamic fallback specifically for segmentation_color!
                     if p == 'segmentation_color':
-                        val = template_vars.get(f'docdash_need_{t}_title_background_color', needs_defaults['title_background_color'])
+                        val = template_vars.get(f'docdash_need_{t}_title_background_color', DEFAULT_NEEDS_CONFIG['title_background_color'])
                     else:
-                        val = needs_defaults.get(p, '')
+                        val = DEFAULT_NEEDS_CONFIG.get(p, '')
             
                 if p == 'title_icon' and val and not val.strip().startswith('\\') and not val.strip().startswith('<'):
                     if val not in config.latex_additional_files:
@@ -932,11 +827,7 @@ def config_inited(app, config):
                     break
                     
             if raw_content is None:
-                if style_name in DEFAULT_TITLE_STYLES:
-                    raw_content = DEFAULT_TITLE_STYLES[style_name]
-                else:
-                    logger.warning(f"[DocDash] Container title style '{style_name}' not found. Falling back to 'classic'.")
-                    raw_content = DEFAULT_TITLE_STYLES['classic']
+                raise ExtensionError(f"[DocDash] CRITICAL: Container style '{style_name}' is missing from the theme installation! Ensure latex_styles/container_title_style exists.")
                 
             s_template = env.from_string(raw_content)
             rendered_content = s_template.render(**template_vars)
@@ -985,12 +876,7 @@ def config_inited(app, config):
                     break
                     
             if raw_content is None:
-                default_path = pkg_dir / "latex_styles" / "admonition" / "default.tex_t"
-                if default_path.exists():
-                    raw_content = default_path.read_text(encoding='utf-8')
-                else:
-                    logger.warning(f"[DocDash] Admonition style '{style_name}' not found. Falling back to internal default.")
-                    raw_content = DEFAULT_ADMONITION_STYLE
+                raise ExtensionError(f"[DocDash] CRITICAL: Admonition style '{style_name}' is missing from the theme installation! Reinstall the extension.")
             
             template_vars['admon_style_name'] = style_name
             s_template = env.from_string(raw_content)
@@ -1036,13 +922,7 @@ def config_inited(app, config):
                     break
                     
             if raw_content is None:
-                default_path = pkg_dir / "latex_styles" / "need" / "default.tex_t"
-                if default_path.exists():
-                    logger.info(f"[DocDash] Need style '{style_name}' not found in user directory. Loading default package style.")
-                    raw_content = default_path.read_text(encoding='utf-8')
-                else:
-                    logger.warning(f"[DocDash] Need style '{style_name}' not found. Falling back to internal fallback string.")
-                    raw_content = DEFAULT_NEED_STYLE
+                raise ExtensionError(f"[DocDash] CRITICAL: Need style '{style_name}' is missing from the theme installation! Reinstall the extension.")
             
             template_vars['need_style_name'] = style_name
             s_template = env.from_string(raw_content)
@@ -1086,12 +966,7 @@ def config_inited(app, config):
                 break
                 
         if tp_raw_content is None:
-            logger.warning(f"[DocDash] Title page template '{tp_style_name}' not found. Falling back to internal default.")
-            default_path = pkg_dir / "latex_styles" / "title_page" / "default.tex_t"
-            if default_path.exists():
-                tp_raw_content = default_path.read_text(encoding='utf-8')
-            else:
-                tp_raw_content = ""
+             raise ExtensionError(f"[DocDash] CRITICAL: Title page template '{tp_style_name}' is missing from the theme installation! Reinstall the extension.")
 
         if tp_raw_content:
             tp_template = env.from_string(tp_raw_content)
