@@ -22,7 +22,7 @@ from .default_config import DEFAULT_NEEDS_CONFIG, DEFAULT_ADMONITION_CONFIG
 
 logger = logging.getLogger(__name__)
 
-__version__ = "0.1.165"
+__version__ = "0.1.166"
 
 
 class StyleBoxDirective(Directive):
@@ -827,7 +827,13 @@ def config_inited(app, config):
                     break
                     
             if raw_content is None:
-                raise ExtensionError(f"[DocDash] CRITICAL: Container style '{style_name}' is missing from the theme installation! Ensure latex_styles/container_title_style exists.")
+                # Fallback to the package default
+                default_path = pkg_dir / "latex_styles" / "container_title_style" / "classic.tex_t"
+                if default_path.exists():
+                    logger.warning(f"[DocDash] Container style '{style_name}' not found. Falling back to 'classic.tex_t'.")
+                    raw_content = default_path.read_text(encoding='utf-8')
+                else:
+                    raise ExtensionError(f"[DocDash] CRITICAL: Container style '{style_name}' and fallback 'classic.tex_t' are missing from the theme installation! Ensure latex_styles/container_title_style exists.")
                 
             s_template = env.from_string(raw_content)
             rendered_content = s_template.render(**template_vars)
@@ -876,7 +882,13 @@ def config_inited(app, config):
                     break
                     
             if raw_content is None:
-                raise ExtensionError(f"[DocDash] CRITICAL: Admonition style '{style_name}' is missing from the theme installation! Reinstall the extension.")
+                # Fallback to the package default
+                default_path = pkg_dir / "latex_styles" / "admonition" / "default.tex_t"
+                if default_path.exists():
+                    logger.warning(f"[DocDash] Admonition style '{style_name}' not found. Falling back to 'default.tex_t'.")
+                    raw_content = default_path.read_text(encoding='utf-8')
+                else:
+                    raise ExtensionError(f"[DocDash] CRITICAL: Admonition style '{style_name}' and fallback 'default.tex_t' are missing from the theme installation! Reinstall the extension.")
             
             template_vars['admon_style_name'] = style_name
             s_template = env.from_string(raw_content)
@@ -922,7 +934,13 @@ def config_inited(app, config):
                     break
                     
             if raw_content is None:
-                raise ExtensionError(f"[DocDash] CRITICAL: Need style '{style_name}' is missing from the theme installation! Reinstall the extension.")
+                # Fallback to the package default
+                default_path = pkg_dir / "latex_styles" / "need" / "default.tex_t"
+                if default_path.exists():
+                    logger.warning(f"[DocDash] Need style '{style_name}' not found. Falling back to 'default.tex_t'.")
+                    raw_content = default_path.read_text(encoding='utf-8')
+                else:
+                    raise ExtensionError(f"[DocDash] CRITICAL: Need style '{style_name}' and fallback 'default.tex_t' are missing from the theme installation! Reinstall the extension.")
             
             template_vars['need_style_name'] = style_name
             s_template = env.from_string(raw_content)
@@ -966,7 +984,13 @@ def config_inited(app, config):
                 break
                 
         if tp_raw_content is None:
-             raise ExtensionError(f"[DocDash] CRITICAL: Title page template '{tp_style_name}' is missing from the theme installation! Reinstall the extension.")
+            # Fallback to the package default
+            default_path = pkg_dir / "latex_styles" / "title_page" / "default.tex_t"
+            if default_path.exists():
+                logger.warning(f"[DocDash] Title page template '{tp_style_name}' not found. Falling back to 'default.tex_t'.")
+                tp_raw_content = default_path.read_text(encoding='utf-8')
+            else:
+                raise ExtensionError(f"[DocDash] CRITICAL: Title page template '{tp_style_name}' and fallback 'default.tex_t' are missing from the theme installation! Reinstall the extension.")
 
         if tp_raw_content:
             tp_template = env.from_string(tp_raw_content)
