@@ -1,0 +1,57 @@
+{
+  "providers": {
+    "c137": {
+      "baseUrl": "http://10.1.10.10:1234/v1",
+      "api": "openai-completions",
+      "apiKey": "ollama",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "qwen/qwen3-coder-30b",
+          "name": "Qwen3 Coder 30B",
+          "input": ["text"],
+          "contextWindow": 262144,
+          "reasoning": false
+        },
+        {
+          "id": "openai/gpt-oss-20b",
+          "name": "GPT-OSS 20B",
+          "input": ["text"],
+          "contextWindow": 131072,
+          "reasoning": true
+        },
+        {
+          "id": "google/gemma-4-26b-a4b",
+          "name": "Gemma 4 26B A4B",
+          "input": ["text", "image"],
+          "contextWindow": 262144,
+          "reasoning": true
+        },
+        {
+          "id": "google/gemma-4-e4b",
+          "name": "Gemma 4 E4B",
+          "input": ["text", "image"],
+          "contextWindow": 131072,
+          "reasoning": true
+        },
+        {
+          "id": "nvidia/nemotron-3-nano-4b",
+          "name": "Nemotron 3 Nano 4B",
+          "input": ["text"],
+          "contextWindow": 1048576,
+          "reasoning": true
+        },
+        {
+          "id": "qwen/qwen3.6-35b-a3b",
+          "name": "Qwen3.6 35B A3B",
+          "input": ["text", "image"],
+          "contextWindow": 262144,
+          "reasoning": true
+        }
+      ]
+    }
+  }
+}
