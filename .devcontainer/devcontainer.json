@@ -1,0 +1,47 @@
+{
+"name": "sphinx-docdash-pdf-theme-default-dev",
+"image": "authsec/docdash:0.0.10",
+"forwardPorts": [
+    8009
+],
+"containerEnv": {
+    "HTTP_SERVER_PORT": "8009",
+    "TZ": "Europe/Berlin"
+},
+"runArgs": [
+    "--cap-add=NET_RAW", // used for the ping command in the tests
+    // You can add other capabilities here if needed, like "--cap-add=NET_ADMIN"
+    //"--cap-add=NET_ADMIN"
+],
+"customizations": {
+    "vscode": {
+        "extensions": [
+            "ms-python.python",
+            "ms-toolsai.jupyter",
+            "jebbs.plantuml",
+            "trond-snekvik.simple-rst",
+            "swyddfa.esbonio"
+            "mechatroner.rainbow-csv",
+            "lextudio.restructuredtext",
+            "useblocks.sphinx-needs-vscode"
+        ],
+        "settings": {
+            "editor.suggest.snippetsPreventQuickSuggestions": true,
+            "editor.suggest.matchOnWordStartOnly": true,
+            "editor.renderWhitespace": "all",
+            "python-envs.alwaysUseUv": true,
+            "restructuredtext.builtDocumentationPath": "${workspaceRoot}/build/html",
+            "restructuredtext.confPath": "${workspaceFolder}/source",
+            "restructuredtext.updateOnTextChanged": "true",
+            "restructuredtext.updateDelay": 1000,
+            "python.pythonPath": "/opt/venv/bin/python",
+            "editor.tabSize": 3,
+            "[restructuredtext]": {
+                "editor.tabSize": 3
+            }
+        }
+    }
+},
+"workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/docs,type=bind",
+"workspaceFolder": "/workspaces/docs"
+}

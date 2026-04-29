@@ -1,0 +1,14 @@
+{
+    "defaultProvider": "c137",
+    "defaultModel": "qwen/qwen3.6-35b-a3b",
+    "defaultThinkingLevel": "high",
+    "compaction": {
+        "enabled": true,
+        "reserveTokens": 16384,
+        "keepRecentTokens": 20000
+    },
+    "packages": [
+        "npm:pi-searxng@1.0.4",
+        "npm:pi-plan-mode@0.4.8"
+    ]
+}
