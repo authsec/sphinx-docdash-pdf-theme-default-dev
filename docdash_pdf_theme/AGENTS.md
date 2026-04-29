@@ -415,7 +415,7 @@ Page layout style overrides (loaded as additional file).
 ### Adding a New Feature
 
 1. **Determine if it's core or theme:**
-   - If it's a general feature (new style type, new config option) → add to `docdash-pdf-theme-core-dev`
+   - If it's a general feature (new style type, new config option) → see Section 8 (Core vs Theme Differentiation)
    - If it's a theme-specific style → add to `docdash_pdf_theme/latex_styles/`
 
 2. **For theme changes:**
@@ -459,9 +459,118 @@ latexmk -lualatex yourfile.tex
 
 ---
 
-## 8. Important Patterns & Gotchas
+## 8. Core vs Theme Differentiation (CRITICAL)
 
-### 8.1 CMYK Color Conversion
+This section contains **strict rules** about when to modify the core (`docdash-pdf-theme-core-dev`) vs when to stay within the theme (`docdash_pdf_theme`).
+
+### Rule 1: Do NOT Modify the Core by Default
+
+You are **NOT ALLOWED** to change `docdash-pdf-theme-core-dev` unless:
+
+1. The requested feature **cannot be implemented** in the theme without a core change, **OR**
+2. The implementation would be **significantly easier or cleaner** with a core change
+
+### Rule 2: Core Changes Impact All Themes
+
+The core is a **shared library** used by all DocDash themes. Any change to the core:
+- May break existing themes that depend on the current core behavior
+- May introduce breaking changes for end-users who pin to a specific core version
+- Requires careful consideration of backward compatibility
+
+### Rule 3: Always Inform the User
+
+When a feature request would target the core, you **MUST**:
+1. **Inform the user explicitly** that the feature requires a core change
+2. **Explain the implications** (impact on other themes, potential breaking changes)
+3. **Ask for permission** before implementing any core changes
+4. **Do NOT implement core changes unless explicitly told to do so**
+
+### Decision Flowchart
+
+```
+User requests feature
+        │
+        ▼
+Is it purely visual/stylistic?
+        │
+        ├── YES → Implement in theme only
+        │           (new .tex_t, new config values, new defaults)
+        │
+        ├── NO → Does it require a new core capability?
+        │           │
+        │           ├── YES → INFORM USER, ask permission
+        │           │
+        │           └── NO → Implement in theme only
+        │
+        ▼
+User grants permission?
+        │
+        ├── YES → Implement in both core + theme
+        │
+        └── NO → Find a theme-only workaround
+```
+
+### Theme-Only Patterns
+
+When implementing features in the theme, prefer these patterns over core changes:
+
+| Pattern | When to Use |
+|---------|-------------|
+| New `.tex_t` style file | New visual appearance for any element |
+| New config dict key | Theme-specific configuration option |
+| New config flat value | Theme-specific global setting |
+| New default in `default_config.py` | Theme-specific default value |
+| New AST processor | Theme-specific node transformation |
+| New utility function in `utils.py` | Theme-specific helper logic |
+| New entry in `preamble.tex_t` | Theme-specific LaTeX code |
+
+### Examples
+
+**Theme-only (implement directly):**
+- "Add a new admonition style with rounded corners" → Create `latex_styles/admonition/rounded.tex_t`
+- "Add a custom container type" → Add to `docdash_containers` config
+- "Change the default font for code blocks" → Add `docdash_code_generic_font` config
+- "Add a new cover page layout" → Create `latex_styles/title_page/custom.tex_t`
+
+**Core-required (inform user):**
+- "Add support for SVG images in containers" → Requires core to handle SVG → ASK USER
+- "Add a new caption position option for figures" → Requires core to understand new values → ASK USER
+- "Add a new container title style type" → Requires core to register the style → ASK USER
+- "Add support for custom LaTeX packages" → Requires core to manage package list → ASK USER
+- "Add a new document element type (e.g., rubric, sidebar)" → Requires core infrastructure → ASK USER
+
+---
+
+## 9. Version Bumping (CRITICAL)
+
+**After every code change**, you MUST update the version in BOTH files:
+
+| File | Location | Current Version |
+|------|----------|----------------|
+| `docdash_pdf_theme/__init__.py` | `__version__ = "0.1.166"` | Line 15 |
+| `pyproject.toml` | `version = "0.1.166"` | Line 6 |
+
+**Rules:**
+- Increment the **patch version** (last digit) for bug fixes and small changes.
+- Increment the **minor version** (middle digit) for new features or significant changes.
+- Always bump **both files in the same commit**.
+- This is critical because the test system uses caching — mismatched versions cause stale builds.
+
+**Example:**
+```python
+# In __init__.py
+__version__ = "0.1.167"  # was 0.1.166
+```
+```toml
+# In pyproject.toml
+version = "0.1.167"  # was 0.1.166
+```
+
+---
+
+## 10. Important Patterns & Gotchas
+
+### 10.1 CMYK Color Conversion
 
 All colors are converted to CMYK for LaTeX. The `hex_to_cmyk_string()` function handles:
 - 3-char hex (`#FFF` → `#FFFFFF`)
@@ -469,7 +578,7 @@ All colors are converted to CMYK for LaTeX. The `hex_to_cmyk_string()` function 
 - 6-char hex (`#FFFFFF`)
 - 8-char hex with alpha (alpha is **dropped** — CMYK doesn't support alpha)
 
-### 8.2 Raw Strings for LaTeX
+### 10.2 Raw Strings for LaTeX
 
 When passing LaTeX commands from Python, **always use raw strings** (`r'...'`):
 ```python
@@ -477,14 +586,14 @@ docdash_title_size = r'\fontsize{32pt}{36pt}\selectfont'  # Correct
 docdash_title_size = '\fontsize{32pt}{36pt}\selectfont'    # WRONG - \f is not a valid escape
 ```
 
-### 8.3 Jinja2 in LaTeX
+### 10.3 Jinja2 in LaTeX
 
 Remember the delimiter differences:
 - `{% if %}` → `<% if %>`
 - `{{ variable }}` → `<< variable >>`
 - `{# comment #}` → `<# comment #>`
 
-### 8.4 Style Resolution Order
+### 10.4 Style Resolution Order
 
 When a user requests a custom style (e.g., `title_style: 'my_custom'`):
 1. Check custom path (`docdash_container_title_style_path`)
@@ -493,7 +602,7 @@ When a user requests a custom style (e.g., `title_style: 'my_custom'`):
 4. Check theme's `latex_styles/container_title_style/{style}.tex_t`
 5. Fall back to theme's `latex_styles/container_title_style/classic.tex_t`
 
-### 8.5 Three-Tier Merge
+### 10.5 Three-Tier Merge
 
 The merge order is critical:
 ```python
@@ -501,22 +610,22 @@ deep_update(core_defaults, theme_defaults)  # Theme overrides core
 deep_update(result, user_config)            # User overrides theme
 ```
 
-### 8.6 Per-Part Backgrounds
+### 10.6 Per-Part Backgrounds
 
 Part backgrounds are keyed by **integer index** (1, 2, 3...), not by name. The theme checks `latex_toplevel_sectioning == 'part'` before processing.
 
-### 8.7 Sphinx-Needs Conditional
+### 10.7 Sphinx-Needs Conditional
 
 The Sphinx-Needs section in `preamble.tex_t` is only rendered if `'sphinx_needs' in extensions`. This prevents errors when sphinx-needs is not installed.
 
-### 8.8 Inheritance System
+### 10.8 Inheritance System
 
 When `docdash_inherit_all=True` (default):
 - `part` → `chapter` → `section` → `subsection` → `subsubsection`
 - For each property (font, color, size), the first non-None value flows downward
 - `inherit_size=False` by default (KOMA handles scaling natively)
 
-### 8.9 Part Number Splitting
+### 10.9 Part Number Splitting
 
 The part number ("Part I") can be split:
 - `part_number_part_*` — Styles for the word "Part"
@@ -525,7 +634,7 @@ The part number ("Part I") can be split:
 
 ---
 
-## 9. Core vs Theme Comparison
+## 11. Core vs Theme Comparison
 
 | Aspect | Core (`docdash-pdf-theme-core-dev`) | Theme (`docdash_pdf_theme`) |
 |--------|-------------------------------------|------------------------------|
@@ -540,7 +649,7 @@ The part number ("Part I") can be split:
 
 ---
 
-## 10. Quick Reference: All Config Keys
+## 12. Quick Reference: All Config Keys
 
 ### Flat Config Values (alphabetical)
 ```
@@ -666,7 +775,7 @@ docdash_title_page_template_path
 
 ---
 
-## 11. Files Summary
+## 13. Files Summary
 
 | File | Lines | Purpose |
 |------|-------|---------|
@@ -686,7 +795,7 @@ docdash_title_page_template_path
 
 ---
 
-## 12. Core Features Showcased by This Theme
+## 14. Core Features Showcased by This Theme
 
 This theme demonstrates all the bells and whistles the core provides:
 
